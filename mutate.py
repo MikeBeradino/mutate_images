@@ -1,5 +1,7 @@
 from tkinter import filedialog
 from tkinter import *
+import tkinter.ttk as ttk
+from tkcolorpicker import askcolor
 from PIL import Image
 from PIL import ImageTk
 from svglib.svglib import svg2rlg
@@ -7,6 +9,49 @@ from reportlab.graphics import renderPM
 import drawSvg as draw
 import svgutils.transform as sg
 from math import sin, cos, radians
+
+def setcolorred():
+    global color_pick
+    color_pick ="#ff0000"
+def setcolorgreen():
+    global color_pick
+    color_pick = "#00ff00"
+    print(color_pick)
+def setcolorblue():
+    global color_pick
+    color_pick = "#0000ff"
+    print(color_pick)
+def setcolorwhite():
+    global color_pick
+    color_pick = "#ffffff"
+    print(color_pick)
+def setcolorblack():
+    global color_pick
+    color_pick = "#000000"
+    print(color_pick)
+def setcoloryellow():
+    global color_pick
+    color_pick ="#ffff00"
+    print(color_pick)
+def setcolorcyan():
+    global color_pick
+    color_pick = "#00ffff"
+    print(color_pick)
+def setcolormagenta():
+    global color_pick
+    color_pick = "#ff00ff"
+    print(color_pick)
+
+def infopanel():
+    root = Tk()
+    S = Scrollbar(root)
+    T = Text(root, height=4, width=50)
+    S.pack(side=RIGHT, fill=Y)
+    T.pack(side=LEFT, fill=Y)
+    S.config(command=T.yview)
+    T.config(yscrollcommand=S.set)
+    print(imagestuff())
+    T.insert(END,imagestuff())
 
 def rotate_point(point, angle, center_point=(0, 0)):
     """Rotates a point around center_point(origin by default)
@@ -53,6 +98,7 @@ def shape_select():
 
 def custom():
     print("custom")
+
     mode2 = (shapes.get())
     if (mode2 == "CUSTOM_"):
         print("CUSTOM_")
@@ -97,7 +143,6 @@ def custom():
             gray, alpa = color_index
             color_flip = 255 - gray
             numb_of_squares = color_flip / gray_scale_values
-            int_number_of_squares = int(numb_of_squares)
             print(numb_of_squares)
             if (rows_out <= cols_out):
                 y_orent = (cols_out - (j * int_pix_size))  #
@@ -140,7 +185,63 @@ def custom():
     #d.saveSvg('working/example_draw.svg')
     svgsample()
 
+def ASCII():
+    print("ascii")
+    image = Image.open("working/pixelated_image.jpg").convert('LA').rotate(180).transpose(Image.FLIP_LEFT_RIGHT)
+
+    txt_size = root.ASCII_sliderVal.get()
+    int_pix_size = int(txt_size)
+    rows = image.size[0]  # 11
+    cols = image.size[1]  # 6
+    rows_out = image.size[0] * int_pix_size  # 14*11=154
+    cols_out = image.size[1] * int_pix_size  # 14*6=84
+    px = image.load()
+    gray_scale_values = 255 / int_pix_size
+    fig = sg.SVGFigure(rows_out, cols_out)
+    txt_name = []
+    txt_to_append = []
+    number = 0
+
+    shortASCII =  " .:-=+*#%@"
+    longASCII = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,^'. "
+    for l in range(rows):
+        for j in range(cols):
+            color_index = ((px[l, j]))
+            gray, alpa = color_index
+            color_flip = 255 - gray
+            print (color_flip)
+            if (root.ascii_small.get() == '1'):
+                index = color_flip /25.5
+                int_index = int(index)
+                char = shortASCII[int_index]
+            if (root.ascii_large.get() == '1'):
+                index = color_flip /3.75
+                int_index = int(index)
+                char = longASCII[int_index]
+
+            numb_of_squares = color_flip / gray_scale_values
+            print(numb_of_squares)
+            if (rows_out <= cols_out):
+                y_orent = (cols_out - (j * int_pix_size))  #
+            else:
+                y_orent = (cols_out - (j * int_pix_size))
+            txt_name.append([str(number)])
+            txt_to_append.append([str(number)])
+            txt_to_append[number] = sg.TextElement(0,0, char, size=int_pix_size, weight="bold", color=color_pick)
+            txt_to_append[number].moveto(l * int_pix_size, (y_orent), scale=numb_of_squares / 10)
+            fig.append([txt_to_append[number]])
+            number = number + 1
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # save generated SVG files
+    fig.save('working/example_draw.svg')
+
+
+    svgsample()
+
 def gray_scale():
+
     print("gray_scale")
     mode2 = (shapes.get())
 
@@ -154,11 +255,11 @@ def gray_scale():
     int_pix_size = int(pix_size)
     rows = image.size[0]  # 11
     cols = image.size[1]  # 6
-    rows_out = image.size[0] * int_pix_size # 14*11=154
+    rows_out = image.size[0] * int_pix_size  # 14*11=154
     cols_out = image.size[1] * int_pix_size  # 14*6=84
     px = image.load()
 
-    if (mode2 == "CIRCLES" or mode2 == "LINE___" ):
+    if (mode2 == "CIRCLES" or mode2 == "LINE___"):
         print("circles")
         d = draw.Drawing(rows_out, cols_out, origin=(-int_pix_size / 2, int_pix_size / 2), displayInline=False)
 
@@ -166,21 +267,18 @@ def gray_scale():
         print("SQUARE_")
         d = draw.Drawing(rows_out, cols_out, origin=(0, int_pix_size), displayInline=False)
 
-    if ( mode2 == "LINE___" and ((root.rotate_line.get() == '1') or (root.hor_line.get() == '1'))):
+    if (mode2 == "LINE___" and ((root.rotate_line.get() == '1') or (root.hor_line.get() == '1'))):
         print("line_")
-        d = draw.Drawing(rows_out, cols_out, origin=(int_pix_size , 0 ), displayInline=False)
+        d = draw.Drawing(rows_out, cols_out, origin=(int_pix_size, 0), displayInline=False)
 
-
-
-
-    if(mode2 == "CIRCLES" or mode2 == "SQUARE_"):
+    if (mode2 == "CIRCLES" or mode2 == "SQUARE_"):
         gray_scale_values = 255 / int_pix_size
 
         for l in range(rows):
             for j in range(cols):
                 color_index = ((px[l, j]))
-                gray,alpa = color_index
-                color_flip = 255-gray
+                gray, alpa = color_index
+                color_flip = 255 - gray
                 numb_of_squares = color_flip / gray_scale_values
                 int_number_of_squares = int(numb_of_squares)
                 if (rows_out <= cols_out):
@@ -190,13 +288,14 @@ def gray_scale():
 
                 if (mode2 == "CIRCLES"):
                     for numb in range(int_number_of_squares):
-                        d.append(draw.Circle(l * int_pix_size, (y_orent), numb-1, stroke_width=1, stroke="black", fill='none'))
+                        d.append(draw.Circle(l * int_pix_size, (y_orent), numb - 1, stroke_width=1, stroke=color_pick,
+                                             fill='none'))
 
                 if (mode2 == "SQUARE_"):
                     for numb in range(int_number_of_squares):
-                        d.append(draw.Rectangle((l * int_pix_size + numb/2), (y_orent + numb/2), int_pix_size - numb, int_pix_size - numb, stroke_width=0.5,stroke='black', fill='none', ))
-
-
+                        d.append(
+                            draw.Rectangle((l * int_pix_size + numb / 2), (y_orent + numb / 2), int_pix_size - numb,
+                                           int_pix_size - numb, stroke_width=0.5, stroke=color_pick, fill='none', ))
 
     if (mode2 == "LINE___"):
         gray_scale_values = 255 / int_pix_size
@@ -215,9 +314,7 @@ def gray_scale():
                 else:
                     y_orent = (cols_out - (j * int_pix_size))
 
-
-
-                if(root.white_val.get() == '1'):
+                if (root.white_val.get() == '1'):
                     if (int_number_of_squares != 1):
                         for numb in range(int_number_of_squares):
                             if (root.hor_line.get() == '1'):
@@ -226,7 +323,7 @@ def gray_scale():
                                 x1 = (y_orent)
                                 y2 = (l * int_pix_size + numb)  # int_pix_size
                                 x2 = (((y_orent) + int_pix_size))
-                            elif(root.rotate_line.get() == '1'): # not working with white
+                            elif (root.rotate_line.get() == '1'):  # not working with white
                                 print("rot_line")
                                 y1 = (l * int_pix_size + numb)
                                 x1 = (y_orent)
@@ -246,33 +343,33 @@ def gray_scale():
                                 x2 = (l * int_pix_size + numb)  # int_pix_size
                                 y2 = (y_orent) + int_pix_size
 
-                            print(x1,y1,x2,y2)
-                            d.append(draw.Lines((x1),(y1),
-                                                (x2),(y2),
+                            print(x1, y1, x2, y2)
+                            d.append(draw.Lines((x1), (y1),
+                                                (x2), (y2),
                                                 stroke_width=1,
-                                                stroke='black',
+                                                stroke=color_pick,
                                                 fill='none',
                                                 close=False))
                 else:
                     for numb in range(int_number_of_squares):
                         if (root.hor_line.get() == '1'):
                             print("here 3")
-                            y1 = (l * int_pix_size+numb)
-                            x1 = (y_orent )
-                            y2 = (l * int_pix_size +numb)  # int_pix_size
+                            y1 = (l * int_pix_size + numb)
+                            x1 = (y_orent)
+                            y2 = (l * int_pix_size + numb)  # int_pix_size
                             x2 = (((y_orent) + int_pix_size))
-                        elif(root.rotate_line.get() == '1'):
+                        elif (root.rotate_line.get() == '1'):
                             print("rot_line")
-                            y1 = (l * int_pix_size+numb)
-                            x1 = (y_orent )
-                            y2 = (l * int_pix_size +numb)  # int_pix_size
+                            y1 = (l * int_pix_size + numb)
+                            x1 = (y_orent)
+                            y2 = (l * int_pix_size + numb)  # int_pix_size
                             x2 = (((y_orent) + int_pix_size))
-                            point1 = rotate_point((x1, y1), 45, ((x1+x2)/2, (y1+y2)/2))
-                            point2 = rotate_point((x2, y2), 45, ((x1+x2)/2, (y1+y2)/2))
-                            print (point1)
+                            point1 = rotate_point((x1, y1), 45, ((x1 + x2) / 2, (y1 + y2) / 2))
+                            point2 = rotate_point((x2, y2), 45, ((x1 + x2) / 2, (y1 + y2) / 2))
+                            print(point1)
                             print(point2)
-                            x1,y1= point1
-                            x2,y2= point2
+                            x1, y1 = point1
+                            x2, y2 = point2
 
                         elif (root.spin_line.get() == '1'):
                             print("spin_line")
@@ -304,11 +401,9 @@ def gray_scale():
                         d.append(draw.Lines((x1), (y1),
                                             (x2), (y2),
                                             stroke_width=1,
-                                            stroke='black',
+                                            stroke=color_pick,
                                             fill='none',
                                             close=False))
-
-
 
                 if (root.white_val.get() == '1'):
                     if (int_number_of_squares != 1):
@@ -330,7 +425,7 @@ def gray_scale():
                             d.append(draw.Lines((x1), (y1),
                                                 (x2), (y2),
                                                 stroke_width=1,
-                                                stroke='black',
+                                                stroke=color_pick,
                                                 fill='none',
                                                 close=False))
 
@@ -338,6 +433,149 @@ def gray_scale():
     # +++++++++++++++++++++++++++++++++++++++++++++++
 
     d.saveSvg('working/example_draw.svg')
+    svgsample()
+    #fix_viewport_grayscale()
+
+def build_pixels_notused():
+    print("build_pixels")
+    print(e4.get())
+    mode2 = (shapes.get())
+
+    if (root.sim.get() == '1'):
+        print("toggled")
+        stroke_val = 0.3
+    else:
+        stroke_val = 1
+
+    redval = root.red_sliderVal.get()
+    blueval = root.blue_sliderVal.get()
+    greenval = root.green_sliderVal.get()
+    toneval = root.tone_sliderVal.get()
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+
+    image = Image.open("working/pixelated_image.jpg")
+    px = image.load()
+    pix_size = (e4.get())
+    int_pix_size = int(pix_size)
+
+    rows = image.size[0]  # 11
+    cols = image.size[1]  # 6
+
+    rows_out = image.size[0] * int_pix_size  # 14*11=154
+    cols_out = image.size[1] * int_pix_size  # 14*6=84
+
+    if (mode2 == "CIRCLES"):
+        print("circles")
+        d = draw.Drawing(rows_out, cols_out, origin=(-int_pix_size / 2, int_pix_size / 2), displayInline=False)
+
+    if (mode2 == "SQUARE_"):
+        print("SQUARE_")
+        d = draw.Drawing(rows_out, cols_out, origin=(0, int_pix_size), displayInline=False)
+
+    for l in range(rows):
+        for j in range(cols):
+            color_index = ((px[l, j]))
+            r, g, b = color_index
+
+            if (rows_out <= cols_out):
+                y_orent = (cols_out - (j * int_pix_size))  #
+            else:
+                y_orent = (cols_out - (j * int_pix_size))
+
+            if (r < toneval and g < toneval and b < toneval):
+                r = 0
+                g = 0
+                b = 0
+
+            print(r)
+            print(g)
+            print(b)
+
+            Cy = (1 - (r / redval))
+            Ma = (1 - (g / greenval))
+            Ye = (1 - (b / blueval))
+
+            var_K = 1
+            if (Cy < var_K):
+                var_K = Cy
+            if (Ma < var_K):
+                var_K = Ma
+            if (Ye < var_K):
+                var_K = Ye
+
+            if (var_K == 1):
+                Cy = 0
+                Ma = 0
+                Ye = 0
+
+
+            else:
+                Cy = (Cy - var_K) / (1 - var_K)
+                Ma = (Ma - var_K) / (1 - var_K)
+                Ye = (Ye - var_K) / (1 - var_K)
+                print("color")
+                print(Cy, Ma, Ye)
+
+            numb_of_squares_magenta = Ma * int_pix_size
+            int_number_of_squares_magenta = int(numb_of_squares_magenta)
+            print("magenta")
+            print(int_number_of_squares_magenta)
+
+            numb_of_squares_cyan = Cy * int_pix_size
+            int_number_of_squares_cyan = int(numb_of_squares_cyan)
+            print("cyan")
+            print(int_number_of_squares_cyan)
+
+            numb_of_squares_yellow = Ye * int_pix_size
+            int_number_of_squares_yellow = int(numb_of_squares_yellow)
+            print("yellow")
+            print(int_number_of_squares_yellow)
+
+            if (r < toneval and g < toneval and b < toneval):
+                color_flip_black = 1.0
+
+            else:
+                color_flip_black = 0
+
+            numb_of_squares_black = color_flip_black * int_pix_size  # howmany rects to add 1.0/
+            int_number_of_squares_black = int(numb_of_squares_black)
+
+            if (mode2 == "CIRCLES"):
+                for numb in range(int_number_of_squares_black):
+                    d.append(
+                        draw.Circle(l * int_pix_size, (y_orent), numb - 1, stroke_width=1, stroke="black", fill='none'))
+
+            if (mode2 == "SQUARE_"):
+                for numb in range(int_number_of_squares_black):
+                    d.append(draw.Rectangle((l * int_pix_size + numb / 2), (y_orent + numb / 2), int_pix_size - numb,
+                                            int_pix_size - numb, stroke_width=0.5, stroke='black', fill='none', ))
+
+                for numb in range(int_number_of_squares_magenta):
+                    d.append(draw.Rectangle((l * int_pix_size + numb / 2), (y_orent + numb / 2), int_pix_size - numb,
+                                            int_pix_size - numb, stroke_width=0.5, stroke='magenta',
+                                            stroke_opacity=stroke_val, fill='none', ))
+
+                for numb in range(int_number_of_squares_cyan):
+                    d.append(draw.Rectangle((l * int_pix_size + numb / 2), (y_orent + numb / 2), int_pix_size - numb,
+                                            int_pix_size - numb, stroke_width=0.5, stroke='cyan',
+                                            stroke_opacity=stroke_val, fill='none', ))
+
+                for numb in range(int_number_of_squares_yellow):
+                    d.append(draw.Rectangle((l * int_pix_size + numb / 2), (y_orent + numb / 2), int_pix_size - numb,
+                                            int_pix_size - numb, stroke_width=0.5, stroke='yellow',
+                                            stroke_opacity=stroke_val, fill='none', ))
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+
+    d.saveSvg('working/example_draw.svg')
+
     svgsample()
 
 def build_pixels():
@@ -555,13 +793,113 @@ def build_circles():
 
     svgsample()
 
-def svgsample():
+def fix_viewport_grayscale():
+    # create new SVG figure
+    #user size input
+    x_in_mm = e2.get()
+    y_in_mm = e1.get()
+    float_x_in_px = float(x_in_mm) * 3.7795275591
+    float_y_in_px = float(y_in_mm) * 3.7795275591
 
+    string_loat_x_in_mm = str(x_in_mm) +"mm"
+    string_loat_y_in_mm = str(y_in_mm ) +"mm"
+
+
+
+    print(string_loat_x_in_mm)
+    print(string_loat_y_in_mm)
+    print(float_x_in_px," float_x_in_px", float_y_in_px," float_y_in_px")
+    print()
+
+    sized = sg.SVGFigure(string_loat_x_in_mm, string_loat_y_in_mm)
+
+    second_svg = sg.fromfile('working/3.svg')
+
+    input_size = second_svg.get_size()
+    x_width , y_height = input_size
+    float_x_width = float(x_width)
+    float_y_height = float(y_height)
+    print (float_x_width, " float_x_width-in mm", float_y_height," float_y_height inmm")
+    print()
+
+
+    px_x_width = float(x_width) * 3.7795275591
+    px_y_height = float(y_height) * 3.7795275591
+
+
+    print("----")
+    print(px_x_width , " px_x_width- of newsvg inpx", px_y_height, " px_y_height - of nesvg in px")
+    print("-----")
+    second_svg_obj = second_svg.getroot()
+
+    newscale_x = float_x_in_px / float_x_width
+    newscale_y = float_y_in_px / float_y_height
+
+    print(newscale_x," newscale_x", newscale_y," newscale_y")
+            #  144 * 11.8 = 1700
+    bigsvgy = float_y_height * newscale_x
+
+    print(bigsvgy)
+    print("======================")
+
+    if newscale_x < newscale_y:
+        # It must be fixed by width
+        print("fixed by x")
+        offset_y = float((float_y_in_px -72))
+        print(offset_y, " offset_y")
+        #less moves up?? 2100
+        second_svg_obj.scale_xy(newscale_x, newscale_x)
+        second_svg_obj.moveto(0.0, offset_y, scale=1)
+    else:
+        # Fixed by height
+
+        print("fixed by y")
+        #second_svg_obj.scale_xy(3034.0,1611.0)
+        #second_svg_obj.moveto(0.0,0.0,scale=newscale_y)
+
+    #txt1 = sg.TextElement(0.0, float_y_in_mm, "A", size=120, weight="bold")
+
+    sized.append(second_svg_obj)
+    #sized.append(txt1)
+    second_svg_obj.save('working/both.svg')
+
+    '''
+    #get the finished svg
+    example_draw = sg.fromfile("working/example_draw.svg")
+    input_size = example_draw.get_size()
+    #gets the input of finshied svg
+    x_width,y_height = input_size
+    print(x_width,y_height)
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # fix view port
+    reading_file = open("working/example_draw.svg", "r")
+    new_file_content = ""
+
+    for i, line in enumerate(reading_file):
+        stripped_line = line.strip()
+        if i == 2 :
+            new_line = stripped_line.replace(stripped_line, 'width="'+x_width+'" height="'+y_height+'" viewBox="0 0 '+x_width+' '+y_height+'">')
+            new_file_content += new_line + "\n"
+
+        else:
+            new_line = stripped_line.replace("-", "")
+            new_file_content += new_line  + "\n"
+
+    reading_file.close()
+    writing_file = open("working/example_draw.svg", 'w')
+    writing_file.write(new_file_content)
+    writing_file.close()
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    '''
+
+def svgsample():
     drawing = svg2rlg("working/example_draw.svg")
     renderPM.drawToFile(drawing, "working/temp.png", fmt="PNG")
 
     image_pil = Image.open(("working/temp.png"))
-
 
     '''
     Resize PIL image keeping ratio and using black background.
@@ -611,17 +949,6 @@ def imagestuff():
 
 
     return imageInfoString
-
-def infopanel():
-    root = Tk()
-    S = Scrollbar(root)
-    T = Text(root, height=4, width=50)
-    S.pack(side=RIGHT, fill=Y)
-    T.pack(side=LEFT, fill=Y)
-    S.config(command=T.yview)
-    T.config(yscrollcommand=S.set)
-    print(imagestuff())
-    T.insert(END,imagestuff())
 
 def close_window():
     root.destroy()
@@ -940,68 +1267,94 @@ def pixelate():
 
 ###################################################
 root = Tk()
+def submenu_and_checkboxes():
 
-# ***main menue***
-menu =Menu(root)
-root.geometry("1150x650") #Width x Height
-root.config(menu=menu)
+    # ***main menue***
+    menu =Menu(root)
+    root.geometry("1150x650") #Width x Height
+    root.config(menu=menu)
 
-subMenu = Menu(menu)
-menu.add_cascade(label="File", menu=subMenu)
-subMenu.add_command(label = "open image", command= openfile)
-subMenu.add_command(label = "open SVG", command= openSVG)
-subMenu.add_separator()
-subMenu.add_command(label = "exit", command = close_window)
+    subMenu = Menu(menu)
+    menu.add_cascade(label="File", menu=subMenu)
+    subMenu.add_command(label = "open image", command= openfile)
+    subMenu.add_command(label = "open SVG", command= openSVG)
+    subMenu.add_separator()
+    subMenu.add_command(label = "exit", command = close_window)
 
-#look at this menue not working
-editMenu = Menu(menu)
-menu.add_cascade(label = "Edit", command = openfile)
-editMenu.add_command(label = "Redo",command = openfile)
+    #look at this menue not working
+    editMenu = Menu(menu)
+    menu.add_cascade(label = "Edit", command = openfile)
+    editMenu.add_command(label = "Redo",command = openfile)
 
-#*** check button***
-root.v = StringVar()
-c1 = Checkbutton(root, text ="invert colors", variable=root.v,bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
-c1.deselect()
-c1.grid(row=0, column=0)
+    #*** check button***
+    root.v = StringVar()
+    c1 = Checkbutton(root, text ="invert colors", variable=root.v,bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+    c1.deselect()
+    c1.grid(row=0, column=0)
 
-#*** check button***
-root.sim = StringVar()
-c2 = Checkbutton(root, text ="simulate", variable=root.sim, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
-c2.deselect()
-c2.grid(row=0, column=1)
-
-
+    #*** check button***
+    root.sim = StringVar()
+    c2 = Checkbutton(root, text ="simulate", variable=root.sim, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+    c2.deselect()
+    c2.grid(row=0, column=1)
 
 
-#*** check button***
-root.white_val = StringVar()
-c3 = Checkbutton(root, text ="white_val", variable=root.white_val, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
-c3.deselect()
-c3.place(x=100,y= 640)
+    #*** check button***
+    root.white_val = StringVar()
+    c3 = Checkbutton(root, text ="white_val", variable=root.white_val, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+    c3.deselect()
+    c3.place(x=100,y= 640)
 
-#*** check button***
-root.hor_line = StringVar()
-c4 = Checkbutton(root, text ="horizontal", variable=root.hor_line, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
-c4.deselect()
-c4.place(x=193,y= 640)
+    #*** check button***
+    root.hor_line = StringVar()
+    c4 = Checkbutton(root, text ="horizontal", variable=root.hor_line, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+    c4.deselect()
+    c4.place(x=193,y= 640)
 
-#*** check button***
-root.rotate_line = StringVar()
-c5 = Checkbutton(root, text ="rotate_line", variable=root.rotate_line, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
-c5.deselect()
-c5.place(x=289,y= 640)
+    #*** check button***
+    root.rotate_line = StringVar()
+    c5 = Checkbutton(root, text ="rotate_line", variable=root.rotate_line, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+    c5.deselect()
+    c5.place(x=289,y= 640)
 
-#*** check button***
-root.spin_line = StringVar()
-c6 = Checkbutton(root, text ="spin_line", variable=root.spin_line, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
-c6.deselect()
-c6.place(x=389,y= 640)
+    #*** check button***
+    root.spin_line = StringVar()
+    c6 = Checkbutton(root, text ="spin_line", variable=root.spin_line, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+    c6.deselect()
+    c6.place(x=389,y= 640)
 
-#*** check button***
-root.one_line = StringVar()
-c7 = Checkbutton(root, text ="one_line", variable=root.one_line, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
-c7.deselect()
-c7.place(x=478,y= 640)
+    #*** check button***
+    root.one_line = StringVar()
+    c7 = Checkbutton(root, text ="one_line", variable=root.one_line, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+    c7.deselect()
+    c7.place(x=478,y= 640)
+
+    #*** check button***
+    root.set_colors = StringVar()
+    c8 = Checkbutton(root, text ="set_color", variable=root.set_colors, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+    c8.select()
+    c8.place(x=0,y= 385)
+
+    #*** check button***
+    root.ascii_small = StringVar()
+    c9 = Checkbutton(root, text ="10char", variable=root.ascii_small, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+    c9.deselect()
+    c9.place(x=210, y=473)
+
+    #*** check button***
+    root.ascii_med = StringVar()
+    c10 = Checkbutton(root, text ="25char", variable=root.ascii_med, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+    c10.deselect()
+    c10.place(x=280, y=473)
+
+    #*** check button***
+    root.ascii_large = StringVar()
+    c11 = Checkbutton(root, text ="75char", variable=root.ascii_large, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+    c11.deselect()
+    c11.place(x=350, y=473)
+
+
+submenu_and_checkboxes()
 
 def show_entry_fields():
     print("OUTPUT X: %s\nOUTPUT Y: %s" % (e1.get(), e2.get()))
@@ -1015,27 +1368,62 @@ def reset():
     e4.delete(0, END)
     e5.delete(0, END)
 
-#*** text boxes***
-Label(root, text="OUTPUT X in mm",anchor="e",bg="gray20", fg="lime green").place(x=5, y=25, height=20, width=125)
-Label(root, text="OUTPUT Y in mm",anchor="e",bg="gray20", fg="lime green").place(x=5, y=45, height=20, width=125)
-Label(root, text="Marker Size in mm",anchor="e",bg="gray20", fg="lime green").place(x=5, y=65, height=20, width=125)
-Label(root, text="# of colors",anchor="e",bg="gray20", fg="lime green").place(x=5, y=85, height=20, width=125)
-Label(root, text="OUTPUT pixel size",anchor="e",bg="gray20", fg="lime green").place(x=5, y=105, height=20, width=125)
-Label(root, text="Pixelate X/Y val",anchor="e",bg="gray20", fg="lime green").place(x=5, y=145, height=20, width=123)
-Label(root, text="Red___",anchor="e",bg="gray20", fg="lime green").place(x=5, y=185, height=20, width=125)
-Label(root, text="Blue__",anchor="e",bg="gray20", fg="lime green").place(x=5, y=225, height=20, width=125)
-Label(root, text="Green_",anchor="e",bg="gray20", fg="lime green").place(x=5, y=265, height=20, width=125)
-Label(root, text="TONE__",anchor="e",bg="gray20", fg="lime green").place(x=5, y=305, height=20, width=125)
+def getColor():
+    style = ttk.Style(root)
+    style.theme_use('clam')
+    hex_code, RGB_code = askcolor((255, 255, 0), root)
+    print(hex_code, RGB_code)
+    return RGB_code
 
-e1 = Entry(root)
-e2 = Entry(root)
-e3 = Entry(root)
-e4 = Entry(root)
+def buttons_and_Labels():
+    #*** text boxes***
+    Label(root, text="OUT height in mm",anchor="e",bg="gray20", fg="lime green").place(x=5, y=25, height=20, width=125)
+    Label(root, text="OUT  width in mm",anchor="e",bg="gray20", fg="lime green").place(x=5, y=45, height=20, width=125)
+    Label(root, text="Marker Size in mm",anchor="e",bg="gray20", fg="lime green").place(x=5, y=65, height=20, width=125)
+    Label(root, text="# of colors",anchor="e",bg="gray20", fg="lime green").place(x=5, y=85, height=20, width=125)
+    Label(root, text="OUTPUT pixel size",anchor="e",bg="gray20", fg="lime green").place(x=5, y=105, height=20, width=125)
+    Label(root, text="Pix",anchor="e",bg="gray20", fg="lime green").place(x=5, y=145, height=20, width=123)
+    Label(root, text="Red",anchor="e",bg="gray20", fg="lime green").place(x=5, y=185, height=20, width=125)
+    Label(root, text="Blu",anchor="e",bg="gray20", fg="lime green").place(x=5, y=225, height=20, width=125)
+    Label(root, text="Gre",anchor="e",bg="gray20", fg="lime green").place(x=5, y=265, height=20, width=125)
+    Label(root, text="B/W",anchor="e",bg="gray20", fg="lime green").place(x=5, y=305, height=20, width=125)
 
+    Button(root,text='',  command=setcolorred, bg="red", fg="red",highlightbackground="lime green",activebackground="red").place(x=5,y=145,height= 40, width=40)
+    Button(root,text='',  command=setcolorgreen, bg="green", fg="green",highlightbackground="lime green",activebackground="green").place(x=45,y=145,height= 40, width=40)
+    Button(root,text='',  command=setcolorblue, bg="blue", fg="blue",highlightbackground="lime green",activebackground="blue").place(x=5,y=185,height= 40, width=40)
+    Button(root,text='',  command=setcolorwhite, bg="white", fg="white",highlightbackground="lime green",activebackground="white").place(x=45,y=185,height= 40, width=40)
+    Button(root,text='',  command=setcolorblack, bg="black", fg="black",highlightbackground="lime green",activebackground="black").place(x=5,y=225,height= 40, width=40)
+    Button(root,text='',  command=setcoloryellow, bg="yellow", fg="yellow",highlightbackground="lime green",activebackground="yellow").place(x=45,y=225,height= 40, width=40)
+    Button(root,text='',  command=setcolormagenta, bg="magenta", fg="magenta",highlightbackground="lime green",activebackground="magenta").place(x=5,y=265,height= 40, width=40)
+    Button(root,text='',  command=setcolorcyan, bg="cyan", fg="cyan",highlightbackground="lime green",activebackground="cyan").place(x=45,y=265,height= 40, width=40)
+
+    Button(root, text='ASCII', command=ASCII, bg="gray20", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=0, y=473, height=25, width=100)
+    Button(root, text='Color_Picker', command=getColor, bg="gray20", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=285, y=0, height=25, width=100)
+    Button(root, text='img info', command=infopanel, bg="gray20", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=195, y=0, height=25, width=100)
+    Button(root, text='Custom', command=custom, bg="gray20", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=0, y=498, height=25, width=100)
+    Button(root, text='RGB split', command=RGB, bg="gray20", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=385, y=0, height=25, width=100)
+    Button(root, text='color circles', command=build_circles, bg="gray20", fg="lime green",
+           highlightbackground="gray20", activebackground="deep sky blue").place(x=0, y=523, height=25, width=100)
+    Button(root, text='color pixels', command=build_pixels, bg="gray20", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=0, y=548, height=25, width=100)
+    Button(root, text='Gray_shapes', command=gray_scale, bg="gray20", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=0, y=572, height=25, width=100)
 deault = StringVar(root, value='8')
 e5 = Entry(root, textvariable=deault)
 deault2 = StringVar(root, value='8')
 e4 = Entry(root, textvariable=deault2)
+
+default_x_mm_output = StringVar(root, value='600')
+e1 = Entry(root, textvariable=default_x_mm_output)
+default_y_mm_output = StringVar(root, value='800')
+e2 = Entry(root, textvariable=default_y_mm_output)
+default_markertip_mm_output = StringVar(root, value='1.6')
+e3 = Entry(root, textvariable=default_markertip_mm_output)
 
 e1.place(x=135, y=25, height=20, width=75)
 e2.place(x=135, y=45, height=20, width=75)
@@ -1043,63 +1431,51 @@ e3.place(x=135, y=65, height=20, width=75)
 e4.place(x=135, y=85, height=20, width=75)
 e5.place(x=135, y=105, height=20, width=75)
 
-def cmd(speed):
-    speed_text =  str(speed)
-    pixelate()
 
-def maxsize(size):
-    root.pixelate_sliderVal = Scale(root, from_=2, to=size, length=150, orient=HORIZONTAL,command=cmd, bg="gray20",
-                               fg="lime green",
-                               highlightbackground="gray20", activebackground="deep sky blue",troughcolor="lavender")
-    root.pixelate_sliderVal.place(x=135, y=125)
 
-Button(root,text='Reset',command=reset,bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue").place(x=285,y=0,height= 25, width=100)
-Button(root,text='img info',command=infopanel,bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue").place(x=195,y=0,height= 25, width=100)
-Button(root,text='Custom', command=custom,bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue").place(x=0,y=330,height= 25, width=100)
-Button(root,text='RGB split', command=RGB,bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue").place(x=385, y=0,height= 25, width=100)
-Button(root,text='Build Circles', command=build_circles,bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue").place(x=0,y=380,height= 25, width=100)
-Button(root,text='Build pixes', command=build_pixels,bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue").place(x=0,y=440,height= 25, width=100)
-Button(root,text='Gray_shapes', command=gray_scale,bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue").place(x=0,y=572,height= 25, width=100)
-
+root.ASCII_sliderVal = Scale(root, from_=0, to=100, length=100, orient=HORIZONTAL, bg="gray20",
+                           fg="lime green",
+                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
+root.ASCII_sliderVal.place(x=110, y=453)
 root.red_sliderVal = Scale(root, from_=0, to=255, length=150, orient=HORIZONTAL, bg="gray20",
-                                fg="lime green",
-                                highlightbackground="gray20", activebackground="deep sky blue", troughcolor="red")
+                           fg="lime green",
+                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="red")
 root.red_sliderVal.place(x=135, y=165)
 
 root.blue_sliderVal = Scale(root, from_=0, to=255, length=150, orient=HORIZONTAL, bg="gray20",
-                                fg="lime green",
-                                highlightbackground="gray20", activebackground="deep sky blue", troughcolor="blue")
+                            fg="lime green",
+                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="blue")
 root.blue_sliderVal.place(x=135, y=205)
 
 root.green_sliderVal = Scale(root, from_=0, to=255, length=150, orient=HORIZONTAL, bg="gray20",
-                                fg="lime green",
-                                highlightbackground="gray20", activebackground="deep sky blue", troughcolor="green")
+                             fg="lime green",
+                             highlightbackground="gray20", activebackground="deep sky blue", troughcolor="green")
 root.green_sliderVal.place(x=135, y=245)
 root.tone_sliderVal = Scale(root, from_=0, to=255, length=150, orient=HORIZONTAL, bg="gray20",
-                                fg="lime green",
-                                highlightbackground="gray20", activebackground="deep sky blue", troughcolor="gray49")
+                            fg="lime green",
+                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="gray49")
 root.tone_sliderVal.place(x=135, y=285)
 root.tone_sliderVal.set(125)  # Set the initial value to 125
 root.green_sliderVal.set(125)  # Set the initial value to 125
 root.blue_sliderVal.set(125)  # Set the initial value to 125
 root.red_sliderVal.set(125)  # Set the initial value to 125
-
-
-Label(root, text="Sample_Mode",anchor="w",bg="gray20", fg="lime green").place(x=210, y=25, height=20, width=100)
+root.ASCII_sliderVal.set(12)  # Set the initial value to 125
+Label(root, text="Sample_Mode", anchor="w", bg="gray20", fg="lime green").place(x=210, y=25, height=20, width=100)
 MODES = [
     ("NEAREST ", "NEAREST "),
     ("BILINEAR", "BILINEAR"),
     ("BICUBIC ", "BICUBIC "),
     ("LANCZOS ", "LANCZOS "),
 ]
+
 v = StringVar()
 v.set("L")  # initialize
-count =0
+count = 0
 for text, mode in MODES:
-    b = Radiobutton(root, text=text,variable=v, value=mode,command= pixelate,bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue").place(x=215,y= 44+count)
-    count = count+20
+    b = Radiobutton(root, text=text, variable=v, value=mode, command=pixelate, bg="gray20", fg="lime green",
+                    highlightbackground="gray20", activebackground="deep sky blue").place(x=215, y=44 + count)
+    count = count + 20
 v.set("LANCZOS ")
-
 
 MODES2 = [
     ("CIRCLES", "CIRCLES"),
@@ -1108,11 +1484,114 @@ MODES2 = [
 ]
 shapes = StringVar()
 shapes.set("L")  # initialize
-menue_count =0
+menue_count = 0
 for text2, mode2 in MODES2:
-    b2 = Radiobutton(root, text=text2,variable=shapes, value=mode2, command=shape_select, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue").place(x=0,y= 600+menue_count)
-    menue_count = menue_count+20
+    b2 = Radiobutton(root, text=text2, variable=shapes, value=mode2, command=shape_select, bg="gray20",
+                     fg="lime green", highlightbackground="gray20", activebackground="deep sky blue").place(x=0,
+                                                                                                            y=600 + menue_count)
+    menue_count = menue_count + 20
 shapes.set("SQUARE_")
-
 root.configure(background='gray20')
+buttons_and_Labels()
+
+def box1_color():
+    button_color1 = box1color
+    if (root.set_colors.get() == "0"):
+        global color_pick
+        color_pick = box1color
+        print("uphere")
+
+    else:
+        Button(root, text='', command=setvar1, bg=button_color1, fg=button_color1, highlightbackground="lime green",
+               activebackground=button_color1).place(x=5, y=305, height=40, width=40)
+
+def setvar1():
+
+    if (root.set_colors.get() == "1"):
+        button_color1 = getColor()
+        global color_pick
+        color_pick = button_color1
+        global box1color
+        box1color = button_color1
+        Button(root, text='', command=box1_color, bg=button_color1, fg=button_color1, highlightbackground="lime green",
+               activebackground=button_color1).place(x=5, y=305, height=40, width=40)
+
+def box2_color():
+    button_color2 = box2color
+    if (root.set_colors.get() == "0"):
+        global color_pick
+        color_pick = box2color
+
+    else:
+        Button(root, text='', command=setvar2, bg=button_color2, fg=button_color2, highlightbackground="lime green",
+               activebackground=button_color2).place(x=45, y=305, height=40, width=40)
+
+def setvar2():
+    if (root.set_colors.get() == "1"):
+        button_color2 = getColor()
+        global color_pick
+        color_pick = button_color2
+        global box2color
+        box2color = button_color2
+        Button(root, text='', command=box2_color, bg=button_color2, fg=button_color2, highlightbackground="lime green",
+               activebackground=button_color2).place(x=45, y=305, height=40, width=40)
+
+def box3_color():
+    button_color3 = box3color
+    if (root.set_colors.get() == "0"):
+        global color_pick
+        color_pick = box3color
+    else:
+        Button(root, text='', command=setvar3, bg=button_color3, fg=button_color3, highlightbackground="lime green",
+               activebackground=button_color3).place(x=5, y=345, height=40, width=40)
+
+def setvar3():
+    if (root.set_colors.get() == "1"):
+        button_color3 = getColor()
+        global color_pick
+        color_pick = button_color3
+        global box3color
+        box3color = button_color3
+        Button(root, text='', command=box3_color, bg=button_color3, fg=button_color3, highlightbackground="lime green",
+               activebackground=button_color3).place(x=5, y=345, height=40, width=40)
+
+def box4_color():
+    button_color4 = box4color
+    if (root.set_colors.get() == "0"):
+        global color_pick
+        color_pick = box4color
+    else:
+        Button(root, text='', command=setvar4, bg=button_color4, fg=button_color4, highlightbackground="lime green",
+               activebackground=button_color4).place(x=45, y=345, height=40, width=40)
+
+def setvar4():
+    if (root.set_colors.get() == "1"):
+        button_color4 = getColor()
+        global color_pick
+        color_pick = button_color4
+        global box4color
+        box4color = button_color4
+        Button(root, text='', command=box4_color, bg=button_color4, fg=button_color4, highlightbackground="lime green",
+               activebackground=button_color4).place(x=45, y=345, height=40, width=40)
+
+def set_color_buttons():
+    button_color1 = "azure2"
+    Button(root,text='',  command=setvar1, bg=button_color1, fg=button_color1,highlightbackground="lime green",activebackground=button_color1).place(x=5,y=305,height= 40, width=40)
+    button_color2 = "azure2"
+    Button(root,text='',  command=setvar2, bg=button_color2, fg=button_color2,highlightbackground="lime green",activebackground=button_color2).place(x=45,y=305,height= 40, width=40)
+    button_color3 = "azure2"
+    Button(root,text='',  command=setvar3, bg=button_color3, fg=button_color3,highlightbackground="lime green",activebackground=button_color3).place(x=5,y=345,height= 40, width=40)
+    button_color4 = "azure2"
+    Button(root,text='',  command=setvar4, bg=button_color4, fg=button_color4,highlightbackground="lime green",activebackground=button_color4).place(x=45,y=345,height= 40, width=40)
+set_color_buttons()
+
+def cmd(speed):
+    pixelate()
+
+def maxsize(size):
+    root.pixelate_sliderVal = Scale(root, from_=2, to=size, length=150, orient=HORIZONTAL,command=cmd, bg="gray20",
+                               fg="lime green",
+                               highlightbackground="gray20", activebackground="deep sky blue",troughcolor="lavender")
+    root.pixelate_sliderVal.place(x=135, y=125)
+
 root.mainloop()
