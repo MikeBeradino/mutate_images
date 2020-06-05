@@ -9,13 +9,72 @@ from reportlab.graphics import renderPM
 import drawSvg as draw
 import svgutils.transform as sg
 from math import sin, cos, radians
-
-
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-
-
+# External Imports
+import os
+import sys
+import xml.etree.ElementTree as ET
+###########################################################
+#used to generate Gcode
+###########################################################
+# Local Imports
+sys.path.insert(0, './lib') # (Import from lib folder)
+import shapes as shapes_pkg
+from shapes import point_generator
+from config import *
+DEBUGGING = True
+SVG = set(['rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'path'])
+#############################################################
+###########################################################
+#used in blacklines
+###########################################################
+from blackstripes import crossed
+from blackstripes import sketchy
+from blackstripes import spiral
+###########################################################
+###########################################################
+###########################################################
+#PenKIT stuff
+###########################################################
+from penkit.fractal import hilbert_curve
+from penkit.textures.util import fit_texture
+from penkit.textures import make_grid_texture
+from penkit.textures.util import rotate_texture
+from penkit.surfaces import make_noise_surface
+from penkit.write import write_plot
+from penkit.projection import project_and_occlude_texture
+###########################################################
+###########################################################
+###########################################################
+#line_drawing_stuff
+###########################################################
+from random import *
+import math
+import argparse
+from PIL import Image, ImageDraw, ImageOps
+from filters import *
+from strokesort import *
+import perlin
+from util import *
+no_cv = False
+export_path = "working/line_draw_out.svg"
+input_path = "images/test.jpg"
+draw_contours = True
+draw_hatch = True
+show_bitmap = False
+resolution = 1024
+hatch_size = 16
+contour_simplify = 2
+try:
+    import numpy as np
+    import cv2
+except:
+    print("Cannot import numpy/openCV. Switching to NO_CV mode.")
+    no_cv = True
+###########################################################
+###########################################################
 def setcolorred():
     global color_pick
     color_pick ="#ff0000"
@@ -84,23 +143,6 @@ def rotate_polygon(polygon, angle, center_point=(0, 0)):
         rotated_corner = rotate_point(corner, angle, center_point)
         rotated_polygon.append(rotated_corner)
     return rotated_polygon
-
-def shape_select():
-    mode2 = (shapes.get())
-    if (mode2 == "CIRCLES" ):
-        print("circles")
-
-    if (mode2 == "SQUARE_"):
-        print("SQUARE_")
-
-    if (mode2 ==  "POLY___" ):
-        print( "POLY___")
-
-    if (mode2 == "TRY____"):
-        print("try")
-
-    if (mode2 == "CUSTOM_"):
-        print("CUSTOM_")
 
 def custom():
     print("custom")
@@ -211,17 +253,18 @@ def gray_scale():
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
 
-    image = Image.open("working/pixelated_image.tif").convert('LA')
+    image = Image.open("working/pixelated_image.tif").convert('LA').transpose(Image.FLIP_TOP_BOTTOM)
     pix_size = (e4.get())
     int_pix_size = int(pix_size)
     rows = image.size[0]  # 11
     cols = image.size[1]  # 6
     rows_out = image.size[0] * int_pix_size  # 14*11=154
     cols_out = image.size[1] * int_pix_size  # 14*6=84
+
     px = image.load()
 
-
-    d = draw.Drawing(rows_out, cols_out, origin=(0, 0), displayInline=False)
+    print(rows_out , cols_out)
+    d = draw.Drawing(rows_out, cols_out, origin=(0,-cols_out) ,displayInline=False) #more wtf !!!
 
 
 
@@ -246,26 +289,26 @@ def gray_scale():
 
                         if (mode2 == "CIRCLES"):
                             for numb in range(int_number_of_squares):
-                                d.append(draw.Circle(l * int_pix_size, (y_orent), numb - 1, stroke_width=1, stroke=color_pick,
+                                d.append(draw.Circle(l * int_pix_size, (-y_orent), numb , stroke_width=1, stroke=color_pick,
                                                      fill='none'))
 
                         if (mode2 == "SQUARE_"):
                             for numb in range(int_number_of_squares):
                                 d.append(
-                                    draw.Rectangle((l * int_pix_size + numb / 2), (y_orent + numb / 2), int_pix_size - numb,
+                                    draw.Rectangle((l * int_pix_size + numb / 2), (-y_orent + numb / 2), int_pix_size - numb,
                                                    int_pix_size - numb, stroke_width=0.5, stroke=color_pick, fill='none', ))
 
                 else:
                     if (mode2 == "CIRCLES"):
                         for numb in range(int_number_of_squares):
                             d.append(
-                                draw.Circle(l * int_pix_size, (y_orent), numb - 1, stroke_width=1, stroke=color_pick,
+                                draw.Circle(l * int_pix_size, (-y_orent), numb , stroke_width=1, stroke=color_pick,
                                             fill='none'))
 
                     if (mode2 == "SQUARE_"):
                         for numb in range(int_number_of_squares):
                             d.append(
-                                draw.Rectangle((l * int_pix_size + numb / 2), (y_orent + numb / 2), int_pix_size - numb,
+                                draw.Rectangle((l * int_pix_size + numb / 2), (-y_orent + numb / 2), int_pix_size - numb,
                                                int_pix_size - numb, stroke_width=0.5, stroke=color_pick, fill='none', ))
 
     if (mode2 == "LINE___"):
@@ -391,7 +434,7 @@ def gray_scale():
 
 
                         else:
-                            print("here 4")
+                            print("here 4ghgfhdfgfg")
                             x1 = (l * int_pix_size + numb)
                             y1 = (y_orent)
                             x2 = (l * int_pix_size + numb)  # int_pix_size
@@ -401,8 +444,8 @@ def gray_scale():
                             int_number_of_squares = 1
 
                         print(x1, y1, x2, y2)
-                        d.append(draw.Lines((x1), (y1),
-                                            (x2), (y2),
+                        d.append(draw.Lines((x1), (-y1), #########wtf !!!!!!
+                                            (x2), (-y2),
                                             stroke_width=1,
                                             stroke=color_pick,
                                             fill='none',
@@ -411,6 +454,7 @@ def gray_scale():
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
 
+    d.saveSvg('working/example_draw-og.svg')
     d.saveSvg('working/example_draw.svg')
     svgsample()
     #fix_viewport_grayscale()
@@ -431,7 +475,13 @@ def build_pixels():
     redval  = root.red_sliderVal.get()
     blueval = root.blue_sliderVal.get()
     greenval=root.green_sliderVal.get()
+
     toneval = root.tone_sliderVal.get()
+
+    redval_max  = root.red_sliderVal_max.get()
+    blueval_max = root.blue_sliderVal_max.get()
+    greenval_max=root.green_sliderVal_max.get()
+
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -453,6 +503,25 @@ def build_pixels():
             color_index = ((px[l, j]))
             r,g,b = color_index
 
+            print(r,g,b)
+            if (r > redval_max):
+                r = redval_max
+            if (r < redval):
+                r = redval
+
+            if (g > greenval_max):
+                g = greenval_max
+            if (g < greenval):
+                g = greenval
+
+            if (b > blueval_max):
+                b = blueval_max
+            if (b < blueval):
+                b = blueval
+
+            print(r,g, b)
+
+
             if (rows_out <= cols_out):
                 y_orent = (cols_out - (j * int_pix_size))  #
             else:
@@ -470,6 +539,11 @@ def build_pixels():
             Cy = (1-(r/redval))
             Ma = (1-(g / greenval))
             Ye = (1-(b / blueval))
+
+
+
+            print( Cy , Ma, Ye)
+
 
             var_K = 1
             if (Cy < var_K):
@@ -493,6 +567,7 @@ def build_pixels():
                 print(Cy,Ma,Ye)
 
 
+
             numb_of_squares_magenta = Ma * int_pix_size
             int_number_of_squares_magenta = int(numb_of_squares_magenta)
             print("magenta")
@@ -514,13 +589,8 @@ def build_pixels():
             else:
                 color_flip_black = 0
 
-
-
             numb_of_squares_black = color_flip_black * int_pix_size  # howmany rects to add 1.0/
             int_number_of_squares_black = int(numb_of_squares_black)
-
-
-
 
             for numb in range(int_number_of_squares_black):
                 d.append(draw.Rectangle((l * int_pix_size + numb/2), (y_orent + numb/2), int_pix_size - numb, int_pix_size - numb, stroke_width=0.5,stroke='black', fill='none', ))
@@ -533,12 +603,6 @@ def build_pixels():
 
             for numb in range(int_number_of_squares_yellow):
                 d.append(draw.Rectangle((l * int_pix_size + numb / 2), (y_orent + numb / 2), int_pix_size - numb, int_pix_size - numb, stroke_width=0.5, stroke='yellow',stroke_opacity=stroke_val, fill='none', ))
-
-    # +++++++++++++++++++++++++++++++++++++++++++++++
-    # +++++++++++++++++++++++++++++++++++++++++++++++
-    # +++++++++++++++++++++++++++++++++++++++++++++++
-    # +++++++++++++++++++++++++++++++++++++++++++++++
-
 
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
@@ -1117,7 +1181,8 @@ def Image_edit():
             if pixdata[x, y] <= (redval, blueval, greenval, toneval):
                 pixdata[x, y] = (redval, blueval, greenval, toneval)
             else:
-                pixdata[x, y] =
+                print("this")
+                #pixdata[x, y] =
 
     img.save('working/result.tif')
 
@@ -1151,13 +1216,500 @@ def Image_edit():
     labelpixel.place(x=325, y=275, anchor="nw")
 
 
-###################################################
+##################################################
+### gcode generater
+##################################################
+def generate_gcode(filename):
+    ''' The main method that converts svg files into gcode files.
+        Still incomplete. See tests/start.svg'''
+
+    # Check File Validity
+    filename = "new_line.svg"
+    if not os.path.isfile(filename):
+        raise ValueError("File \"" + filename + "\" not found.")
+
+    if not filename.endswith('.svg'):
+        raise ValueError("File \"" + filename + "\" is not an SVG file.")
+
+    # Define the Output
+    # ASSUMING LINUX / OSX FOLDER NAMING STYLE
+    log = ""
+    log += debug_log("Input File: " + filename)
+
+    file = filename.split('/')[-1]
+    dirlist = filename.split('/')[:-1]
+    dir_string = ""
+    for folder in dirlist:
+        dir_string += folder + '/'
+
+    # Make Output File
+    outdir = dir_string + "gcode_output/"
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+    outfile = outdir + file.split(".svg")[0] + '.gcode'
+    log += debug_log("Output File: " + outfile)
+
+    # Make Debug File
+    debugdir = dir_string + "log/"
+    if not os.path.exists(debugdir):
+        os.makedirs(debugdir)
+    debug_file = debugdir + file.split(".svg")[0] + '.log'
+    log += debug_log("Log File: " + debug_file + "\n")
+
+    # Get the SVG Input File
+    file = open(filename, 'r')
+    tree = ET.parse(file)
+    root = tree.getroot()
+    file.close()
+
+    # Get the Height and Width from the parent svg tag
+    width = root.get('width')
+    height = root.get('height')
+    if width == None or height == None:
+        viewbox = root.get('viewBox')
+        if viewbox:
+            _, _, width, height = viewbox.split()
+
+    if width == None or height == None:
+        # raise ValueError("Unable to get width or height for the svg")
+        print("Unable to get width and height for the svg")
+        sys.exit(1)
+
+    # Scale the file appropriately
+    # (Will never distort image - always scales evenly)
+    # ASSUMES: Y ASIX IS LONG AXIS
+    #          X AXIS IS SHORT AXIS
+    # i.e. laser cutter is in "portrait"
+    scale_x = bed_max_x / float(width)
+    scale_y = bed_max_y / float(height)
+    scale = min(scale_x, scale_y)
+    if scale > 1:
+        scale = 1
+
+    log += debug_log("wdth: " + str(width))
+    log += debug_log("hght: " + str(height))
+    log += debug_log("scale: " + str(scale))
+    log += debug_log("x%: " + str(scale_x))
+    log += debug_log("y%: " + str(scale_y))
+
+    # CREATE OUTPUT VARIABLE
+    gcode = ""
+
+    # Write Initial G-Codes
+    gcode += preamble + "\n"
+
+    # Iterate through svg elements
+    for elem in root.iter():
+        log += debug_log("--Found Elem: " + str(elem))
+        new_shape = True
+        try:
+            tag_suffix = elem.tag.split("}")[-1]
+        except:
+            print("Error reading tag value:", tag_suffix)
+            continue
+
+        # Checks element is valid SVG shape
+        if tag_suffix in SVG:
+
+            log += debug_log("  --Name: " + str(tag_suffix))
+
+            # Get corresponding class object from 'shapes.py'
+            shape_class = getattr(shapes_pkg, tag_suffix)
+            shape_obj = shape_class(elem)
+
+            log += debug_log("\tClass : " + str(shape_class))
+            log += debug_log("\tObject: " + str(shape_obj))
+            log += debug_log("\tAttrs : " + str(list(elem.items())))
+            log += debug_log("\tTransform: " + str(elem.get('transform')))
+
+            ############ HERE'S THE MEAT!!! #############
+            # Gets the Object path info in one of 2 ways:
+            # 1. Reads the <tag>'s 'd' attribute.
+            # 2. Reads the SVG and generates the path itself.
+            d = shape_obj.d_path()
+            log += debug_log("\td: " + str(d))
+
+            # The *Transformation Matrix* #
+            # Specifies something about how curves are approximated
+            # Non-essential - a default is used if the method below
+            #   returns None.
+            m = shape_obj.transformation_matrix()
+            log += debug_log("\tm: " + str(m))
+
+            if d:
+                log += debug_log("\td is GOOD!")
+
+                gcode += shape_preamble + "\n"
+                points = point_generator(d, m, smoothness)
+
+                log += debug_log("\tPoints: " + str(points))
+
+                for x, y in points:
+
+                    # log += debug_log("\t  pt: "+str((x,y)))
+
+                    x = scale * x
+                    y = bed_max_y - scale * y
+
+                    log += debug_log("\t  pt: " + str((x, y)))
+
+                    if x >= -10000000 and x <= bed_max_x + 10000000000 and y >= -1000000000 and y <= bed_max_y + 100000000000:
+                        if new_shape:
+                            gcode += ("G0 X%0.1f Y%0.1f\n" % (x, y))
+                            gcode += "M03\n"
+                            new_shape = False
+                        else:
+                            gcode += ("G0 X%0.1f Y%0.1f\n" % (x, y))
+                        log += debug_log("\t    --Point printed")
+                    else:
+                        log += debug_log("\t    --POINT NOT PRINTED (" + str(bed_max_x) + "," + str(bed_max_y) + ")")
+                gcode += shape_postamble + "\n"
+            else:
+                log += debug_log("\tNO PATH INSTRUCTIONS FOUND!!")
+        else:
+            log += debug_log("  --No Name: " + tag_suffix)
+
+    gcode += postamble + "\n"
+
+    # Write the Result
+    ofile = open(outfile, 'w+')
+    ofile.write(gcode)
+    ofile.close()
+
+    # Write Debugging
+    if DEBUGGING:
+        dfile = open(debug_file, 'w+')
+        dfile.write(log)
+        dfile.close()
+#opens svg file selector
+def svg_for_gcode():
+    root.SVGfile = filedialog.askopenfilename(initialdir="svg_output/", title="Select file", filetypes=(
+    ("SVG files", "*.svg"), ("all files", "*.*")))
+
+
+    file = str(root.SVGfile)
+    generate_gcode(file)
+#log for gcode generator
+def debug_log(message):
+    ''' Simple debugging function. If you don't understand
+        something then chuck this frickin everywhere. '''
+    if (DEBUGGING):
+        print(message)
+    return message + '\n'
+#used in generate gcode
+def test(filename):
+    ''' Simple test function to call to check that this
+        module has been loaded properly'''
+    circle_gcode = "G28\nG1 Z5.0\nG4 P200\nG1 X10.0 Y100.0\nG1 X10.0 Y101.8\nG1 X10.6 Y107.0\nG1 X11.8 Y112.1\nG1 X13.7 Y117.0\nG1 X16.2 Y121.5\nG1 X19.3 Y125.7\nG1 X22.9 Y129.5\nG1 X27.0 Y132.8\nG1 X31.5 Y135.5\nG1 X36.4 Y137.7\nG1 X41.4 Y139.1\nG1 X46.5 Y139.9\nG1 X51.7 Y140.0\nG1 X56.9 Y139.4\nG1 X62.0 Y138.2\nG1 X66.9 Y136.3\nG1 X71.5 Y133.7\nG1 X75.8 Y130.6\nG1 X79.6 Y127.0\nG1 X82.8 Y122.9\nG1 X85.5 Y118.5\nG1 X87.6 Y113.8\nG1 X89.1 Y108.8\nG1 X89.9 Y103.6\nG1 X90.0 Y98.2\nG1 X89.4 Y93.0\nG1 X88.2 Y87.9\nG1 X86.3 Y83.0\nG1 X83.8 Y78.5\nG1 X80.7 Y74.3\nG1 X77.1 Y70.5\nG1 X73.0 Y67.2\nG1 X68.5 Y64.5\nG1 X63.6 Y62.3\nG1 X58.6 Y60.9\nG1 X53.5 Y60.1\nG1 X48.3 Y60.0\nG1 X43.1 Y60.6\nG1 X38.0 Y61.8\nG1 X33.1 Y63.7\nG1 X28.5 Y66.3\nG1 X24.2 Y69.4\nG1 X20.4 Y73.0\nG1 X17.2 Y77.1\nG1 X14.5 Y81.5\nG1 X12.4 Y86.2\nG1 X10.9 Y91.2\nG1 X10.1 Y96.4\nG1 X10.0 Y100.0\nG4 P200\nG4 P200\nG1 X110.0 Y100.0\nG1 X110.0 Y101.8\nG1 X110.6 Y107.0\nG1 X111.8 Y112.1\nG1 X113.7 Y117.0\nG1 X116.2 Y121.5\nG1 X119.3 Y125.7\nG1 X122.9 Y129.5\nG1 X127.0 Y132.8\nG1 X131.5 Y135.5\nG1 X136.4 Y137.7\nG1 X141.4 Y139.1\nG1 X146.5 Y139.9\nG1 X151.7 Y140.0\nG1 X156.9 Y139.4\nG1 X162.0 Y138.2\nG1 X166.9 Y136.3\nG1 X171.5 Y133.7\nG1 X175.8 Y130.6\nG1 X179.6 Y127.0\nG1 X182.8 Y122.9\nG1 X185.5 Y118.5\nG1 X187.6 Y113.8\nG1 X189.1 Y108.8\nG1 X189.9 Y103.6\nG1 X190.0 Y98.2\nG1 X189.4 Y93.0\nG1 X188.2 Y87.9\nG1 X186.3 Y83.0\nG1 X183.8 Y78.5\nG1 X180.7 Y74.3\nG1 X177.1 Y70.5\nG1 X173.0 Y67.2\nG1 X168.5 Y64.5\nG1 X163.6 Y62.3\nG1 X158.6 Y60.9\nG1 X153.5 Y60.1\nG1 X148.3 Y60.0\nG1 X143.1 Y60.6\nG1 X138.0 Y61.8\nG1 X133.1 Y63.7\nG1 X128.5 Y66.3\nG1 X124.2 Y69.4\nG1 X120.4 Y73.0\nG1 X117.2 Y77.1\nG1 X114.5 Y81.5\nG1 X112.4 Y86.2\nG1 X110.9 Y91.2\nG1 X110.1 Y96.4\nG1 X110.0 Y100.0\nG4 P200\nG28\n"
+    print(circle_gcode[:90], "...")
+    return circle_gcode
+
+##################################################
+#blackstripes
+##################################################
+def levels_by_preview_name(name):
+	return (100, 150, 200, 230)
+
+def crop_by_preview_name(name):
+	return name
+
+def blackstripes_filters():
+    print("blackstripes_filters")
+    mode3 = (blackstripes_filter.get())
+
+
+    image_path = "images/image.png"
+    path = "working/image10.svg"
+    color = "#ff00ff"
+
+    l1, l2, l3, l4 = levels_by_preview_name(image_path)
+    selected_crop = crop_by_preview_name(image_path)
+
+    im = Image.open(selected_crop)
+    im = im.resize((1000,1000), Image.ANTIALIAS)
+    im.save(selected_crop)
+
+    if (mode3 == "SPIRAL_"):
+
+        spiral.draw(selected_crop,         # input
+                path,                      # output
+                3,                         # nibsize (line size in output svg)
+                color,                     # line color
+                0.21,                      # scaling factor
+                l1, l2, l3, l4,            # levels
+                2,                         # line spacing
+                730,970,0.5               # signature transform
+                )
+
+    if (mode3 =="CROSSED" ):
+
+        crossed.draw(selected_crop,         # input
+                    path,                   # output
+                    3,                      # nibsize (line size in output svg)
+                    color,                  # line color
+                    1.00,                   # scaling factor
+                    l1, l2, l3, l4,         # levels
+                    1,                      # type
+                    380,500,0.2              # signature transform
+                )
+    if (mode3 =="SKETCHY"):
+
+        sketchy.draw(image_path,  # input
+                     path,  # output
+                     2,  # nibsize (line size in output svg)
+                     100,  # max line length
+                     color,  # line color
+                     1.00,  # scaling factor
+                     1,  # line size (internal line size for calculations)
+                     380, 500, 0.2  # signature transform
+                     )
+
+##################################################
+##################################################
+
+##################################################
+#pen kit
+##################################################
+def pen_kit_gen():
+    print("pen kit")
+    mode4 = (grid_type.get())
+
+
+
+    if (mode4 == "Grid___"):
+        #Grid Surface Projection
+        # create a texture
+        grid_density = 68
+        texture = make_grid_texture(grid_density, grid_density, 100)
+        # rotate the texture
+        texture = rotate_texture(texture, rotation=65)
+        # create the surface
+        surface = make_noise_surface(blur=28, seed=12345) * 10
+        # project the texture onto the surface
+        proj = project_and_occlude_texture(texture, surface, angle=69)
+        # plot the result
+        write_plot([proj], 'working/grid_surface.svg')
+
+    if (mode4 =="Hilbert"):
+        #Hilbert Curve Surface Projection
+        # create a texture
+        texture = hilbert_curve(7)
+        # rotate the texture
+        texture = rotate_texture(texture, 30)
+        texture = fit_texture(texture)
+        # create the surface
+        surface = make_noise_surface(blur=30) * 5
+        # project the texture onto the surface
+        proj = project_and_occlude_texture(texture, surface, 50)
+        # plot the result
+        write_plot([proj], 'working/hilbert_surface.svg')
+
+##################################################
+##################################################
+
+##################################################
+#line_drawing
+##################################################
+def find_edges(IM):
+    print("finding edges...")
+    if no_cv:
+        #appmask(IM,[F_Blur])
+        appmask(IM,[F_SobelX,F_SobelY])
+    else:
+        im = np.array(IM)
+        im = cv2.GaussianBlur(im,(3,3),0)
+        im = cv2.Canny(im,100,200)
+        IM = Image.fromarray(im)
+    return IM.point(lambda p: p > 128 and 255)
+
+def getdots(IM):
+    print("getting contour points...")
+    PX = IM.load()
+    dots = []
+    w, h = IM.size
+    for y in range(h - 1):
+        row = []
+        for x in range(1, w):
+            if PX[x, y] == 255:
+                if len(row) > 0:
+                    if x - row[-1][0] == row[-1][-1] + 1:
+                        row[-1] = (row[-1][0], row[-1][-1] + 1)
+                    else:
+                        row.append((x, 0))
+                else:
+                    row.append((x, 0))
+        dots.append(row)
+    return dots
+
+def connectdots(dots):
+    print("connecting contour points...")
+    contours = []
+    for y in range(len(dots)):
+        for x, v in dots[y]:
+            if v > -1:
+                if y == 0:
+                    contours.append([(x, y)])
+                else:
+                    closest = -1
+                    cdist = 100
+                    for x0, v0 in dots[y - 1]:
+                        if abs(x0 - x) < cdist:
+                            cdist = abs(x0 - x)
+                            closest = x0
+
+                    if cdist > 3:
+                        contours.append([(x, y)])
+                    else:
+                        found = 0
+                        for i in range(len(contours)):
+                            if contours[i][-1] == (closest, y - 1):
+                                contours[i].append((x, y,))
+                                found = 1
+                                break
+                        if found == 0:
+                            contours.append([(x, y)])
+        for c in contours:
+            if c[-1][1] < y - 1 and len(c) < 4:
+                contours.remove(c)
+    return contours
+
+def getcontours(IM, sc=2):
+    print("generating contours...")
+    IM = find_edges(IM)
+    IM1 = IM.copy()
+    IM2 = IM.rotate(-90, expand=True).transpose(Image.FLIP_LEFT_RIGHT)
+    dots1 = getdots(IM1)
+    contours1 = connectdots(dots1)
+    dots2 = getdots(IM2)
+    contours2 = connectdots(dots2)
+
+    for i in range(len(contours2)):
+        contours2[i] = [(c[1], c[0]) for c in contours2[i]]
+    contours = contours1 + contours2
+
+    for i in range(len(contours)):
+        for j in range(len(contours)):
+            if len(contours[i]) > 0 and len(contours[j]) > 0:
+                if distsum(contours[j][0], contours[i][-1]) < 8:
+                    contours[i] = contours[i] + contours[j]
+                    contours[j] = []
+
+    for i in range(len(contours)):
+        contours[i] = [contours[i][j] for j in range(0, len(contours[i]), 8)]
+
+    contours = [c for c in contours if len(c) > 1]
+
+    for i in range(0, len(contours)):
+        contours[i] = [(v[0] * sc, v[1] * sc) for v in contours[i]]
+
+    for i in range(0, len(contours)):
+        for j in range(0, len(contours[i])):
+            contours[i][j] = int(contours[i][j][0] + 10 * perlin.noise(i * 0.5, j * 0.1, 1)), int(
+                contours[i][j][1] + 10 * perlin.noise(i * 0.5, j * 0.1, 2))
+
+    return contours
+
+def hatch(IM, sc=16):
+    print("hatching...")
+    PX = IM.load()
+    w, h = IM.size
+    lg1 = []
+    lg2 = []
+    for x0 in range(w):
+        for y0 in range(h):
+            x = x0 * sc
+            y = y0 * sc
+            if PX[x0, y0] > 144:
+                pass
+
+            elif PX[x0, y0] > 64:
+                lg1.append([(x, y + sc / 4), (x + sc, y + sc / 4)])
+            elif PX[x0, y0] > 16:
+                lg1.append([(x, y + sc / 4), (x + sc, y + sc / 4)])
+                lg2.append([(x + sc, y), (x, y + sc)])
+
+            else:
+                lg1.append([(x, y + sc / 4), (x + sc, y + sc / 4)])
+                lg1.append([(x, y + sc / 2 + sc / 4), (x + sc, y + sc / 2 + sc / 4)])
+                lg2.append([(x + sc, y), (x, y + sc)])
+
+    lines = [lg1, lg2]
+    for k in range(0, len(lines)):
+        for i in range(0, len(lines[k])):
+            for j in range(0, len(lines[k])):
+                if lines[k][i] != [] and lines[k][j] != []:
+                    if lines[k][i][-1] == lines[k][j][0]:
+                        lines[k][i] = lines[k][i] + lines[k][j][1:]
+                        lines[k][j] = []
+        lines[k] = [l for l in lines[k] if len(l) > 0]
+    lines = lines[0] + lines[1]
+
+    for i in range(0, len(lines)):
+        for j in range(0, len(lines[i])):
+            lines[i][j] = int(lines[i][j][0] + sc * perlin.noise(i * 0.5, j * 0.1, 1)), int(
+                lines[i][j][1] + sc * perlin.noise(i * 0.5, j * 0.1, 2)) - j
+    return lines
+
+def sketch(path):
+    IM = None
+    possible = [path, "images/" + path, "images/" + path + ".jpg", "images/" + path + ".png", "images/" + path + ".tif"]
+    for p in possible:
+        try:
+            IM = Image.open(p)
+            break
+        except FileNotFoundError:
+            print("The Input File wasn't found. Check Path")
+            exit(0)
+            pass
+    w, h = IM.size
+
+    IM = IM.convert("L")
+    IM = ImageOps.autocontrast(IM, 10)
+
+    lines = []
+    if draw_contours:
+        lines += getcontours(IM.resize((resolution // contour_simplify, resolution // contour_simplify * h // w)),
+                             contour_simplify)
+    if draw_hatch:
+        lines += hatch(IM.resize((resolution // hatch_size, resolution // hatch_size * h // w)), hatch_size)
+
+    lines = sortlines(lines)
+    if show_bitmap:
+        disp = Image.new("RGB", (resolution, resolution * h // w), (255, 255, 255))
+        draw = ImageDraw.Draw(disp)
+        for l in lines:
+            draw.line(l, (0, 0, 0), 5)
+        disp.show()
+
+    f = open(export_path, 'w')
+    f.write(makesvg(lines))
+    f.close()
+    print(len(lines), "strokes.")
+    print("done.")
+    return lines
+
+def makesvg(lines):
+    print("generating svg file...")
+    out = '<svg xmlns="http://www.w3.org/2000/svg" version="1.1">'
+    for l in lines:
+        l = ",".join([str(p[0] * 0.5) + "," + str(p[1] * 0.5) for p in l])
+        out += '<polyline points="' + l + '" stroke="black" stroke-width="2" fill="none" />\n'
+    out += '</svg>'
+    return out
+
+def line_drawing():
+    print("line drawing")
+    sketch(input_path)
+
+##################################################
+##################################################
+
 root = Tk()
 def submenu_and_checkboxes():
 
     # ***main menue***
     menu =Menu(root)
-    root.geometry("1150x650") #Width x Height
+    root.geometry("1150x680") #Width x Height
     root.config(menu=menu)
 
     subMenu = Menu(menu)
@@ -1272,6 +1824,15 @@ def buttons_and_Labels():
     Button(root,text='',  command=setcolormagenta, bg="magenta", fg="magenta",highlightbackground="lime green",activebackground="magenta").place(x=5,y=265,height= 40, width=40)
     Button(root,text='',  command=setcolorcyan, bg="cyan", fg="cyan",highlightbackground="lime green",activebackground="cyan").place(x=45,y=265,height= 40, width=40)
 
+    Button(root, text='Line_drawing', command=line_drawing, bg="gray20", fg="lime green",
+           highlightbackground="gray20", activebackground="deep sky blue").place(x=523, y=527, height=25, width=100)
+
+    Button(root, text='Grid_gen', command=pen_kit_gen, bg="gray20", fg="lime green",
+           highlightbackground="gray20", activebackground="deep sky blue").place(x=423, y=527, height=25, width=100)
+    Button(root, text='Blackstripes', command=blackstripes_filters, bg="gray20", fg="lime green",
+           highlightbackground="gray20", activebackground="deep sky blue").place(x=323, y=527, height=25, width=100)
+    Button(root, text='Gcode', command=svg_for_gcode, bg="gray20", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=210, y=423, height=25, width=100)
     Button(root, text='edit_image', command=Image_edit, bg="gray20", fg="lime green", highlightbackground="gray20",
            activebackground="deep sky blue").place(x=105, y=423, height=25, width=100)
     Button(root, text='path_fill', command=Fill, bg="gray20", fg="lime green", highlightbackground="gray20",
@@ -1313,34 +1874,54 @@ e4.place(x=135, y=85, height=20, width=75)
 e5.place(x=135, y=105, height=20, width=75)
 
 
-
-root.ASCII_sliderVal = Scale(root, from_=0, to=100, length=100, orient=HORIZONTAL, bg="gray20",
+root.ASCII_sliderVal = Scale(root, from_=1, to=100, length=100,width=7, orient=HORIZONTAL, bg="gray20",
                            fg="lime green",
                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
 root.ASCII_sliderVal.place(x=100, y=453)
-root.red_sliderVal = Scale(root, from_=0, to=255, length=150, orient=HORIZONTAL, bg="gray20",
+
+
+root.red_sliderVal = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
                            fg="lime green",
                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="red")
 root.red_sliderVal.place(x=135, y=165)
 
-root.blue_sliderVal = Scale(root, from_=0, to=255, length=150, orient=HORIZONTAL, bg="gray20",
+root.red_sliderVal_max = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
+                           fg="lime green",
+                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="red")
+root.red_sliderVal_max.place(x=210, y=165)
+
+
+root.blue_sliderVal = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
                             fg="lime green",
                             highlightbackground="gray20", activebackground="deep sky blue", troughcolor="blue")
 root.blue_sliderVal.place(x=135, y=205)
+root.blue_sliderVal_max = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
+                            fg="lime green",
+                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="blue")
+root.blue_sliderVal_max.place(x=210, y=205)
 
-root.green_sliderVal = Scale(root, from_=0, to=255, length=150, orient=HORIZONTAL, bg="gray20",
+
+root.green_sliderVal = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
                              fg="lime green",
                              highlightbackground="gray20", activebackground="deep sky blue", troughcolor="green")
 root.green_sliderVal.place(x=135, y=245)
-root.tone_sliderVal = Scale(root, from_=0, to=255, length=150, orient=HORIZONTAL, bg="gray20",
+root.green_sliderVal_max = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
+                             fg="lime green",
+                             highlightbackground="gray20", activebackground="deep sky blue", troughcolor="green")
+root.green_sliderVal_max.place(x=210, y=245)
+
+root.tone_sliderVal = Scale(root, from_=1, to=255, length=150, orient=HORIZONTAL, bg="gray20",
                             fg="lime green",
                             highlightbackground="gray20", activebackground="deep sky blue", troughcolor="gray49")
 root.tone_sliderVal.place(x=135, y=285)
 
 root.tone_sliderVal.set(125)  # Set the initial value to 125
-root.green_sliderVal.set(125)  # Set the initial value to 125
-root.blue_sliderVal.set(125)  # Set the initial value to 125
-root.red_sliderVal.set(125)  # Set the initial value to 125
+root.green_sliderVal.set(0)  # Set the initial value to 125
+root.blue_sliderVal.set(0)  # Set the initial value to 125
+root.red_sliderVal.set(0)  # Set the initial value to 125
+root.green_sliderVal_max.set(255)  # Set the initial value to 125
+root.blue_sliderVal_max.set(255)  # Set the initial value to 125
+root.red_sliderVal_max.set(255)  # Set the initial value to 125
 root.ASCII_sliderVal.set(12)  # Set the initial value to 125
 
 Label(root, text="Sample_Mode", anchor="w", bg="gray20", fg="lime green").place(x=210, y=25, height=20, width=100)
@@ -1369,11 +1950,46 @@ shapes = StringVar()
 shapes.set("L")  # initialize
 menue_count = 0
 for text2, mode2 in MODES2:
-    b2 = Radiobutton(root, text=text2, variable=shapes, value=mode2, command=shape_select, bg="gray20",
+    b2 = Radiobutton(root, text=text2, variable=shapes, value=mode2, bg="gray20",
                      fg="lime green", highlightbackground="gray20", activebackground="deep sky blue").place(x=0,
                                                                                                             y=600 + menue_count)
     menue_count = menue_count + 20
 shapes.set("SQUARE_")
+
+
+Label(root, anchor="w", bg="gray20", fg="lime green").place(x=310, y=550, height=20, width=100)
+MODES3 = [
+    ("SPIRAL_", "SPIRAL_"),
+    ("CROSSED", "CROSSED"),
+    ("SKETCHY", "SKETCHY"),
+
+]
+
+blackstripes_filter = StringVar()
+blackstripes_filter.set("L")  # initialize
+menu2_count = 0
+for text3, mode3 in MODES3:
+    b = Radiobutton(root, text=text3, variable=blackstripes_filter, value=mode3, bg="gray20", fg="lime green",
+                    highlightbackground="gray20", activebackground="deep sky blue").place(x=315, y=554 + menu2_count)
+    menu2_count = menu2_count + 20
+blackstripes_filter.set("CROSSED")
+
+Label(root, anchor="w", bg="gray20", fg="lime green").place(x=410, y=550, height=20, width=100)
+MODES4 = [
+    ("Grid___", "Grid___"),
+    ("Hilbert", "Hilbert")
+]
+
+grid_type = StringVar()
+grid_type.set("L")  # initialize
+menu4_count = 0
+for text4, mode4 in MODES4:
+    b = Radiobutton(root, text=text4, variable=grid_type, value=mode4, bg="gray20", fg="lime green",
+                    highlightbackground="gray20", activebackground="deep sky blue").place(x=415, y=554 + menu4_count)
+    menu4_count = menu4_count + 20
+grid_type.set("Hilbert")
+
+
 root.configure(background='gray20')
 buttons_and_Labels()
 
