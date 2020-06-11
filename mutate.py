@@ -1,3 +1,4 @@
+import center_tk_window
 from tkinter import filedialog
 from tkinter import *
 import tkinter.ttk as ttk
@@ -16,6 +17,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 import xml.etree.ElementTree as ET
+
 ###########################################################
 #used to generate Gcode
 ###########################################################
@@ -43,8 +45,10 @@ from penkit.textures.util import fit_texture
 from penkit.textures import make_grid_texture
 from penkit.textures.util import rotate_texture
 from penkit.surfaces import make_noise_surface
-from penkit.write import write_plot
+#from penkit.write import write_plot
 from penkit.projection import project_and_occlude_texture
+import xml.etree.ElementTree as ET
+import numpy as np
 ###########################################################
 ###########################################################
 ###########################################################
@@ -59,14 +63,6 @@ from strokesort import *
 import perlin
 from util import *
 no_cv = False
-export_path = "working/line_draw_out.svg"
-input_path = "images/test.jpg"
-draw_contours = True
-draw_hatch = True
-show_bitmap = False
-resolution = 1024
-hatch_size = 16
-contour_simplify = 2
 try:
     import numpy as np
     import cv2
@@ -75,6 +71,7 @@ except:
     no_cv = True
 ###########################################################
 ###########################################################
+color_pick="#000000"
 def setcolorred():
     global color_pick
     color_pick ="#ff0000"
@@ -150,7 +147,7 @@ def custom():
     # +++++++++++++++++++++++++++++++++++++++++++++++
     svgfile = (str(root.SVGfile))
     image = Image.open("working/pixelated_image.tif").convert('LA').rotate(180).transpose(Image.FLIP_LEFT_RIGHT)
-    pix_size = (e4.get())
+    pix_size = (e5.get())
     int_pix_size = int(pix_size)
     rows = image.size[0]  # 11
     cols = image.size[1]  # 6
@@ -245,211 +242,162 @@ def ASCII():
 
     svgsample()
 
-def gray_scale():
+def gray_Lines():
+    mode5 = (line_type.get())
 
-    print("gray_scale")
-    mode2 = (shapes.get())
+    ("Horizontal", "Horizontal"),
+    ("Spin", "Spin"),
+    ("Rotate", "Rotate"),
 
-    # +++++++++++++++++++++++++++++++++++++++++++++++
-    # +++++++++++++++++++++++++++++++++++++++++++++++
-
+    print("gray_lines")
     image = Image.open("working/pixelated_image.tif").convert('LA').transpose(Image.FLIP_TOP_BOTTOM)
-    pix_size = (e4.get())
+    pix_size = (e5.get())
     int_pix_size = int(pix_size)
     rows = image.size[0]  # 11
     cols = image.size[1]  # 6
     rows_out = image.size[0] * int_pix_size  # 14*11=154
     cols_out = image.size[1] * int_pix_size  # 14*6=84
-
     px = image.load()
+    print(rows_out, cols_out)
+    d = draw.Drawing(rows_out, cols_out, origin=(0, -cols_out), displayInline=False)  # more wtf !!!
+    gray_scale_values = 256 / int_pix_size
 
-    print(rows_out , cols_out)
-    d = draw.Drawing(rows_out, cols_out, origin=(0,-cols_out) ,displayInline=False) #more wtf !!!
+    for l in range(rows):
+        for j in range(cols):
+            color_index = ((px[l, j]))
+            gray, alpa = color_index
 
+            color_flip = 256 - gray
+            numb_of_squares = color_flip / gray_scale_values
 
+            int_number_of_squares = int(numb_of_squares)
+            if (rows_out <= cols_out):
+                y_orent = (cols_out - (j * int_pix_size))  #
+            else:
+                y_orent = (cols_out - (j * int_pix_size))
 
-    if (mode2 == "CIRCLES" or mode2 == "SQUARE_"):
-        gray_scale_values = 256 / int_pix_size
-
-        for l in range(rows):
-            for j in range(cols):
-                color_index = ((px[l, j]))
-                gray, alpa = color_index
-                color_flip = 256 - gray
-                numb_of_squares = color_flip / gray_scale_values
-                int_number_of_squares = int(numb_of_squares)
-
-                if (rows_out <= cols_out):
-                    y_orent = (cols_out - (j * int_pix_size))  #
-                else:
-                    y_orent = (cols_out - (j * int_pix_size))
-
-                if (root.white_val.get() == '1'):
-                    if (int_number_of_squares != 1):
-
-                        if (mode2 == "CIRCLES"):
-                            for numb in range(int_number_of_squares):
-                                d.append(draw.Circle(l * int_pix_size, (-y_orent), numb , stroke_width=1, stroke=color_pick,
-                                                     fill='none'))
-
-                        if (mode2 == "SQUARE_"):
-                            for numb in range(int_number_of_squares):
-                                d.append(
-                                    draw.Rectangle((l * int_pix_size + numb / 2), (-y_orent + numb / 2), int_pix_size - numb,
-                                                   int_pix_size - numb, stroke_width=0.5, stroke=color_pick, fill='none', ))
-
-                else:
-                    if (mode2 == "CIRCLES"):
-                        for numb in range(int_number_of_squares):
-                            d.append(
-                                draw.Circle(l * int_pix_size, (-y_orent), numb , stroke_width=1, stroke=color_pick,
-                                            fill='none'))
-
-                    if (mode2 == "SQUARE_"):
-                        for numb in range(int_number_of_squares):
-                            d.append(
-                                draw.Rectangle((l * int_pix_size + numb / 2), (-y_orent + numb / 2), int_pix_size - numb,
-                                               int_pix_size - numb, stroke_width=0.5, stroke=color_pick, fill='none', ))
-
-    if (mode2 == "LINE___"):
-        gray_scale_values = 256 / int_pix_size
-
-        for l in range(rows):
-            for j in range(cols):
-                color_index = ((px[l, j]))
-                gray, alpa = color_index
-
-                color_flip = 256 - gray
-                numb_of_squares = color_flip / gray_scale_values
-
-                int_number_of_squares = int(numb_of_squares)
-                if (rows_out <= cols_out):
-                    y_orent = (cols_out - (j * int_pix_size))  #
-                else:
-                    y_orent = (cols_out - (j * int_pix_size))
-
-                if (root.white_val.get() == '1'):
-                    if (int_number_of_squares != 1):
-                        for numb in range(int_number_of_squares):
-                            if (root.hor_line.get() == '1'):
-
-                                x2 = (l * int_pix_size + numb)
-                                y2 = (y_orent)
-                                x1 = (l * int_pix_size + numb)  # int_pix_size
-                                y1 = (((y_orent) + int_pix_size))
-
-                                point1 = rotate_point((x1, y1), 90, ((x1 + x2) / 2, (y1 + y2) / 2))
-                                point2 = rotate_point((x2, y2), 90, ((x1 + x2) / 2, (y1 + y2) / 2))
-                                print(point1)
-                                print(point2)
-                                x1, y1 = point1
-                                x2, y2 = point2
-
-
-                            elif (root.spin_line.get() == '1'):
-                                print("spin_line")
-                                x2 = (l * int_pix_size + numb)
-                                y2 = (y_orent)
-                                x1 = (l * int_pix_size + numb)  # int_pix_size
-                                y1 = (((y_orent) + int_pix_size))
-
-                                point1 = rotate_point((x1, y1), gray, ((x1 + x2) / 2, (y1 + y2) / 2))
-                                point2 = rotate_point((x2, y2), gray, ((x1 + x2) / 2, (y1 + y2) / 2))
-                                print(point1)
-                                print(point2)
-                                x1, y1 = point1
-                                x2, y2 = point2
-
-
-                            elif (root.rotate_line.get() == '1'):  # not working with white
-                                print("rot_line")
-                                x2 = (l * int_pix_size + numb)
-                                y2 = (y_orent)
-                                x1 = (l * int_pix_size + numb)  # int_pix_size
-                                y1 = (((y_orent) + int_pix_size))
-
-                                point1 = rotate_point((x1, y1), 45, ((x1 + x2) / 2, (y1 + y2) / 2))
-                                point2 = rotate_point((x2, y2), 45, ((x1 + x2) / 2, (y1 + y2) / 2))
-                                print(point1)
-                                print(point2)
-                                x1, y1 = point1
-                                x2, y2 = point2
-                            else:
-                                print("here 2")
-                                x1 = (l * int_pix_size + numb)
-                                y1 = (y_orent)
-                                x2 = (l * int_pix_size + numb)  # int_pix_size
-                                y2 = (y_orent) + int_pix_size
-
-                            print(x1, y1, x2, y2)
-                            d.append(draw.Lines((x1), (y1),
-                                                (x2), (y2),
-                                                stroke_width=1,
-                                                stroke=color_pick,
-                                                fill='none',
-                                                close=False))
-
-                else:
+            if (root.white_val.get() == '1'):
+                if (int_number_of_squares != 1):
                     for numb in range(int_number_of_squares):
-                        if (root.hor_line.get() == '1'):
+                        if (mode5 == "Horizontal"):
 
-                            x2 = (l * int_pix_size + numb)
-                            y2 = (y_orent)
-                            x1 = (l * int_pix_size + numb)  # int_pix_size
-                            y1 = (((y_orent) + int_pix_size))
+                            x2 = ((l * int_pix_size) + int_pix_size/2)
+                            y2 = (y_orent+ numb)-int_pix_size
+                            x1 = ((l * int_pix_size) + int_pix_size/2) # int_pix_size
+                            y1 = (((y_orent) + int_pix_size)+ numb)-int_pix_size
 
                             point1 = rotate_point((x1, y1), 90, ((x1 + x2) / 2, (y1 + y2) / 2))
                             point2 = rotate_point((x2, y2), 90, ((x1 + x2) / 2, (y1 + y2) / 2))
                             print(point1)
                             print(point2)
-                            x1, y1 = point1
-                            x2, y2 = point2
+                            x1, y1pos = point1
+                            x2, y2pos = point2
+                            y1 = -y1pos
+                            y2 = -y2pos
 
-                        elif (root.rotate_line.get() == '1'):
-                            x2 = (l * int_pix_size + numb)
-                            y2 = (y_orent)
-                            x1 = (l * int_pix_size + numb)  # int_pix_size
-                            y1 = (((y_orent) + int_pix_size))
-                            point1 = rotate_point((x1, y1), 45, ((x1 + x2) / 2, (y1 + y2) / 2))
-                            point2 = rotate_point((x2, y2), 45, ((x1 + x2) / 2, (y1 + y2) / 2))
-                            print(point1)
-                            print(point2)
-                            x1, y1 = point1
-                            x2, y2 = point2
-
-                        elif (root.spin_line.get() == '1'):
+                        elif (mode5 == "Spin"):
                             print("spin_line")
                             x2 = (l * int_pix_size + numb)
                             y2 = (y_orent)
                             x1 = (l * int_pix_size + numb)  # int_pix_size
-                            y1 = (((y_orent) + int_pix_size))
+                            y1 = (((y_orent) - int_pix_size))
 
                             point1 = rotate_point((x1, y1), gray, ((x1 + x2) / 2, (y1 + y2) / 2))
                             point2 = rotate_point((x2, y2), gray, ((x1 + x2) / 2, (y1 + y2) / 2))
                             print(point1)
                             print(point2)
-                            x1, y1 = point1
-                            x2, y2 = point2
+                            x1, y1pos = point1
+                            x2, y2pos = point2
+                            y1 = -y1pos
+                            y2 = -y2pos
 
+                        elif (mode5 == "Rotate"):  # not working with white
+                            print("rot_line")
+                            x2 = (l * int_pix_size + numb)
+                            y2 = (y_orent)
+                            x1 = (l * int_pix_size + numb)  # int_pix_size
+                            y1 = (((y_orent) - int_pix_size))
 
-
+                            point1 = rotate_point((x1, y1), 45, ((x1 + x2) / 2, (y1 + y2) / 2))
+                            point2 = rotate_point((x2, y2), 45, ((x1 + x2) / 2, (y1 + y2) / 2))
+                            x1, y1pos = point1
+                            x2, y2pos = point2
+                            y1 = -y1pos
+                            y2 = -y2pos
                         else:
-                            print("here 4ghgfhdfgfg")
+
                             x1 = (l * int_pix_size + numb)
                             y1 = (y_orent)
                             x2 = (l * int_pix_size + numb)  # int_pix_size
                             y2 = (y_orent) + int_pix_size
 
-                        if (root.hor_line.get() == '1'):
-                            int_number_of_squares = 1
-
                         print(x1, y1, x2, y2)
-                        d.append(draw.Lines((x1), (-y1), #########wtf !!!!!!
-                                            (x2), (-y2),
+                        d.append(draw.Lines((x1), (y1),
+                                            (x2), (y2),
                                             stroke_width=1,
                                             stroke=color_pick,
                                             fill='none',
                                             close=False))
+
+            else:
+                for numb in range(int_number_of_squares):
+                    if (mode5 == "Horizontal"):
+
+                        x2 = ((l * int_pix_size) + int_pix_size / 2)
+                        y2 = (y_orent + numb) - int_pix_size
+                        x1 = ((l * int_pix_size) + int_pix_size / 2)  # int_pix_size
+                        y1 = (((y_orent) + int_pix_size) + numb) - int_pix_size
+
+                        point1 = rotate_point((x1, y1), 90, ((x1 + x2) / 2, (y1 + y2) / 2))
+                        point2 = rotate_point((x2, y2), 90, ((x1 + x2) / 2, (y1 + y2) / 2))
+                        print(point1)
+                        print(point2)
+                        x1, y1 = point1
+                        x2, y2 = point2
+
+
+                    elif (mode5 == "Rotate"):
+                        x2 = (l * int_pix_size + numb)
+                        y2 = (y_orent)
+                        x1 = (l * int_pix_size + numb)  # int_pix_size
+                        y1 = (((y_orent) - int_pix_size))
+                        point1 = rotate_point((x1, y1), 45, ((x1 + x2) / 2, (y1 + y2) / 2))
+                        point2 = rotate_point((x2, y2), 45, ((x1 + x2) / 2, (y1 + y2) / 2))
+                        print(point1)
+                        print(point2)
+                        x1, y1 = point1
+                        x2, y2 = point2
+
+                    elif (mode5 == "Spin"):
+                        print("spin_line")
+                        x2 = (l * int_pix_size + numb)
+                        y2 = (y_orent)
+                        x1 = (l * int_pix_size + numb)  # int_pix_size
+                        y1 = (((y_orent) - int_pix_size))
+
+                        point1 = rotate_point((x1, y1), gray, ((x1 + x2) / 2, (y1 + y2) / 2))
+                        point2 = rotate_point((x2, y2), gray, ((x1 + x2) / 2, (y1 + y2) / 2))
+                        print(point1)
+                        print(point2)
+                        x1, y1 = point1
+                        x2, y2 = point2
+
+                    else:
+
+                        x1 = (l * int_pix_size + numb)
+                        y1 = (y_orent)
+                        x2 = (l * int_pix_size + numb) # int_pix_size
+                        y2 = (y_orent) - int_pix_size
+
+
+
+                    print(x1, y1, x2, y2)
+                    d.append(draw.Lines((x1), (-y1), #########wtf !!!!!!
+                                        (x2), (-y2),
+                                        stroke_width=1,
+                                        stroke=color_pick,
+                                        fill='none',
+                                        close=False))
 
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
@@ -459,9 +407,183 @@ def gray_scale():
     svgsample()
     #fix_viewport_grayscale()
 
+def gray_scale():
+    use_canvase_scale = root.SCALE_TO_CANVASE_SIZE.get()
+    print("gray_scale")
+    mode2 = (shapes.get())
+    marker_size = float(e3.get())
+    inout = root.in_to_out.get()
+    pix_size = (e5.get())
+    int_pix_size = int(pix_size)
+    offset = (float(marker_size) * 2)
+
+
+    if (use_canvase_scale == "1"):
+        canvas_width = int(e1.get())
+        canvas_height = int(e2.get())
+        marker_size = float(e3.get())
+        # add overlap for markersize?
+        ##use pil to scale the image to canvas frame
+        # so 200x200 ---> 400x400
+        ## bypass the manual pixelation
+        img = Image.open(str(root.filename))
+        width, height = img.size[:2]
+        pixel_width_to_mm = int(canvas_width) / int(pix_size)
+        pixel_height_to_mm = int(canvas_height) / int(pix_size)
+
+        if height > width:
+            baseheight = pixel_width_to_mm
+            hpercent = (baseheight / float(img.size[1]))
+            wsize = int((float(img.size[0]) * float(hpercent)))
+            img = img.resize((wsize, baseheight), Image.ANTIALIAS)
+            img.save('working/pixelated-cs_image.tif')
+        else:
+            basewidth = pixel_height_to_mm
+            wpercent = (basewidth / float(img.size[0]))
+            hsize = int((float(img.size[1]) * float(wpercent)))
+            img = img.resize((int(basewidth), hsize), Image.ANTIALIAS)
+            img.save('working/pixelated-cs_image.tif')
+        # +++++++++++++++++++++++++++++++++++++++++++++++
+        # +++++++++++++++++++++++++++++++++++++++++++++++
+        image = Image.open("working/pixelated-cs_image.tif").convert('LA').transpose(Image.FLIP_TOP_BOTTOM)
+        # pixel sizes should be about 10mm
+        numb_of_boxes = (float(pix_size) / float(offset))
+        int_numb_of_boxes = int(numb_of_boxes)
+        rows = image.size[0]  # 11
+        cols = image.size[1]  # 6
+        rows_out = image.size[0] * int_pix_size  # 14*11=154
+        cols_out = image.size[1] * int_pix_size  # 14*6=84
+    else:
+        image = Image.open("working/pixelated_image.tif").convert('LA').transpose(Image.FLIP_TOP_BOTTOM)
+        rows = image.size[0]  # 11
+        cols = image.size[1]  # 6
+        rows_out = image.size[0] * int_pix_size  # 14*11=154
+        cols_out = image.size[1] * int_pix_size  # 14*6=84
+
+    px = image.load()
+    print(rows_out, cols_out)
+    d = draw.Drawing(rows_out, cols_out, origin=(0, -cols_out), displayInline=False)  # more wtf !!!
+
+    if (mode2 == "CIRCLES" or mode2 == "SQUARE_"):
+        if (use_canvase_scale == "1"):
+            gray_scale_values = 256 / int_numb_of_boxes # 51
+        else:
+            gray_scale_values = 256 / int_pix_size
+
+        for l in range(rows):
+            for j in range(cols):
+                color_index = ((px[l, j]))
+                gray, alpa = color_index
+                color_flip = 256 - gray
+                numb_of_squares = color_flip / gray_scale_values
+                int_number_of_squares = int(numb_of_squares)
+                y_orent = (cols_out - (j * int_pix_size))
+
+                if (use_canvase_scale != "1"):
+                    if (root.white_val.get() == '1'):
+                        if (int_number_of_squares != 1):
+
+                            if (mode2 == "CIRCLES"):
+                                for numb in range(int_number_of_squares):
+                                    d.append(draw.Circle((l * int_pix_size)+int_pix_size/2, (-y_orent)+int_pix_size/2, numb-1 , stroke_width=marker_size, stroke=color_pick,
+                                                         fill='none'))
+
+                            if (mode2 == "SQUARE_"):
+                                for numb in range(int_number_of_squares):
+                                    d.append(
+                                        draw.Rectangle((l * int_pix_size + (numb * offset) / 2), (-y_orent + (numb * offset) / 2), (int_pix_size - (numb * offset)),
+                                                       (int_pix_size - (numb * offset)), stroke_width=marker_size, stroke=color_pick, fill='none', ))
+                            if ((mode2 == "SQUARE_") and (inout == "1")):
+                                print("finish this")
+                    else:
+                        if (mode2 == "CIRCLES"):
+                            for numb in range(int_number_of_squares):
+                                d.append(draw.Circle((l * int_pix_size) + int_pix_size / 2, (-y_orent) + int_pix_size / 2, numb - 1, stroke_width=marker_size, stroke=color_pick,
+                                                     fill='none'))
+
+                        if (mode2 == "SQUARE_"):
+                            for numb in range(int_number_of_squares):
+                                d.append(
+                                    draw.Rectangle((l * int_pix_size + (numb * offset) / 2), (-y_orent + (numb * offset) / 2), (int_pix_size - (numb * offset)),
+                                                   (int_pix_size - (numb * offset)), stroke_width=marker_size, stroke=color_pick, fill='none', ))
+                        if ((mode2 == "SQUARE_") and (inout == "1")):
+                            print("finish this")
+                else:
+                    if (root.white_val.get() == '1'):
+                        if (int_number_of_squares > 0  ):
+                            if ((mode2 == "CIRCLES") ):
+                                for numb in range(0,int_number_of_squares,1):
+                                    d.append(draw.Circle((l * int_pix_size) + int_pix_size / 2, (-y_orent) + int_pix_size / 2, numb*offset/2, stroke_width=marker_size, stroke=color_pick,
+                                                    fill='none'))
+
+                            if ((mode2 == "SQUARE_")): #inside out
+                                print("works2")
+                                print(int_number_of_squares)
+                                for numb in range(0,int_number_of_squares,1):
+                                    print(numb)
+                                    d.append(
+                                        draw.Rectangle(((l * int_pix_size) + int_pix_size )-( numb*offset/2)-(int_pix_size/2) , (-y_orent)-(( numb*offset/2)-(int_pix_size)/2) , ( ((numb) * (offset))),
+                                                       (((numb)*offset)), stroke_width=marker_size, stroke=color_pick, fill='none', ))
+                            if ((mode2 == "SQUARE_") and (inout != "1")):
+                                for numb in range(int_number_of_squares):
+                                    d.append(
+                                        draw.Rectangle((l * int_pix_size + (numb * offset) / 2), (-y_orent + (numb * offset) / 2), (int_pix_size - (numb * offset)),
+                                                       (int_pix_size - (numb * offset)), stroke_width=marker_size, stroke=color_pick, fill='none', ))
+
+
+
+                    else:
+                        if ((mode2 == "CIRCLES")):
+                            for numb in range(0, int_number_of_squares + 1, 1):
+                                d.append(draw.Circle((l * int_pix_size) + int_pix_size / 2, (-y_orent) + int_pix_size / 2, numb * offset / 2, stroke_width=marker_size, stroke=color_pick,
+                                                     fill='none'))
+
+                        if ((mode2 == "SQUARE_") and (inout == "1")):  # inside out
+                            print("works2")
+                            print(int_number_of_squares)
+                            for numb in range(0, int_number_of_squares + 1, 1):
+                                print(numb)
+                                d.append(
+                                    draw.Rectangle(((l * int_pix_size) + int_pix_size) - (numb * offset / 2) - (int_pix_size / 2), (-y_orent) - ((numb * offset / 2) - (int_pix_size) / 2), (((numb) * (offset))),
+                                                   (((numb) * offset)), stroke_width=marker_size, stroke=color_pick, fill='none', ))
+
+
+                        if ((mode2 == "SQUARE_") and (inout != "1") ):
+                            for numb in range(int_number_of_squares):
+                                d.append(
+                                    draw.Rectangle((l * int_pix_size + (numb * offset) / 2), (-y_orent + (numb * offset) / 2), (int_pix_size - (numb * offset)),
+                                                   (int_pix_size - (numb * offset)), stroke_width=marker_size, stroke=color_pick, fill='none', ))
+                    '''
+                    if (mode2 == "SQUARE_"):
+                        for numb in range(int_number_of_squares):
+                            d.append(
+                                draw.Rectangle((l * int_pix_size + (numb*offset)/ 2) , (-y_orent + (numb*offset)/ 2), (int_pix_size - (numb* offset)),
+                                               (int_pix_size - (numb*offset)), stroke_width=marker_size, stroke=color_pick, fill='none', ))
+
+                    
+                    if (mode2 == "SQUARE_"):
+                        for numb in range(int_number_of_squares):
+                            d.append(
+                                draw.Rectangle((l * int_pix_size + (numb*offset)/ 2) , (-y_orent + (numb*offset)/ 2), ( (numb* offset)),
+                                               ((numb*offset)), stroke_width=marker_size, stroke=color_pick, fill='none', ))
+                    '''
+
+
+
+
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+
+    d.saveSvg('working/example_draw-og.svg')
+
+    d.saveSvg('working/example_draw.svg')
+    svgsample()
+    #fix_viewport_grayscale()
+
 def build_pixels():
     print("build_pixels")
-    print(e4.get())
+    print(e5.get())
     mode2 = (shapes.get())
     print(mode2)
 
@@ -487,7 +609,7 @@ def build_pixels():
 
     image = Image.open("working/pixelated_image.tif")
     px = image.load()
-    pix_size = (e4.get())
+    pix_size = (e5.get())
     int_pix_size = int(pix_size)
 
     rows = image.size[0]  # 11
@@ -740,10 +862,7 @@ def fix_viewport_grayscale():
         # Fixed by height
 
         print("fixed by y")
-        #second_svg_obj.scale_xy(3034.0,1611.0)
-        #second_svg_obj.moveto(0.0,0.0,scale=newscale_y)
 
-    #txt1 = sg.TextElement(0.0, float_y_in_mm, "A", size=120, weight="bold")
 
     sized.append(second_svg_obj)
     #sized.append(txt1)
@@ -1106,8 +1225,10 @@ def pixelate():
 
         # Save
         result.save('working/result.tif')
+        result.save('working/result.png')
         # Save
         imgSmall.save('working/pixelated_image.tif')
+        imgSmall.save('working/pixelated_image.png')
 
     ###################################################
     ###################################################
@@ -1146,8 +1267,9 @@ def OUTLINE():
     (h, w) = img.shape[:2]
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     edged = cv2.Canny(hsv, 100, 200)
-    image, contours, hierachy = cv2.findContours(edged, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
 
+
+    contours, hierarchy = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     idx = 0
     for c in contours:
         plt.plot(c[:, 0, 0], h - c[:, 0, 1], linewidth=1)
@@ -1155,6 +1277,8 @@ def OUTLINE():
 
     plt.savefig("working/test1.svg", format="svg")
     plt.show()
+
+
 def Fill():
     print("fill")
 
@@ -1214,7 +1338,6 @@ def Image_edit():
     labelpixel = Label(image=pixelsample)
     labelpixel.image = pixelsample
     labelpixel.place(x=325, y=275, anchor="nw")
-
 
 ##################################################
 ### gcode generater
@@ -1417,55 +1540,210 @@ def blackstripes_filters():
     print("blackstripes_filters")
     mode3 = (blackstripes_filter.get())
 
+    image_path = ("working/pixelated_image.png")
+    path = "working/example_draw.svg"
+    color = color_pick
 
-    image_path = "images/image.png"
-    path = "working/image10.svg"
-    color = "#ff00ff"
+    scale = float(root.scale_factor_sliderVal.get())
+    space = int(root.space_factor_sliderVal.get())
+    nib_size = float(e3.get())
+
 
     l1, l2, l3, l4 = levels_by_preview_name(image_path)
-    selected_crop = crop_by_preview_name(image_path)
-
-    im = Image.open(selected_crop)
-    im = im.resize((1000,1000), Image.ANTIALIAS)
-    im.save(selected_crop)
+    print (l1,l2,l3,l4)
 
     if (mode3 == "SPIRAL_"):
 
-        spiral.draw(selected_crop,         # input
+        spiral.draw(image_path,             # input
                 path,                      # output
-                3,                         # nibsize (line size in output svg)
+                nib_size,                  # nibsize (line size in output svg)
                 color,                     # line color
-                0.21,                      # scaling factor
+                scale,                     # scaling factor
                 l1, l2, l3, l4,            # levels
-                2,                         # line spacing
-                730,970,0.5               # signature transform
+                space,                     # line spacing
+                1,1,1                      # signature transform
                 )
 
     if (mode3 =="CROSSED" ):
 
-        crossed.draw(selected_crop,         # input
+        crossed.draw(image_path,            # input
                     path,                   # output
-                    3,                      # nibsize (line size in output svg)
+                    nib_size,               # nibsize (line size in output svg)
                     color,                  # line color
-                    1.00,                   # scaling factor
+                    scale,                  # scaling factor
                     l1, l2, l3, l4,         # levels
                     1,                      # type
-                    380,500,0.2              # signature transform
-                )
+                    1,1,1                   # signature transform
+                 )
+    '''
     if (mode3 =="SKETCHY"):
 
         sketchy.draw(image_path,  # input
                      path,  # output
-                     2,  # nibsize (line size in output svg)
-                     100,  # max line length
+                     20,  # nibsize (line size in output svg)
+                     1000,  # max line length
                      color,  # line color
-                     1.00,  # scaling factor
-                     1,  # line size (internal line size for calculations)
-                     380, 500, 0.2  # signature transform
+                     4.06,  # scaling factor
+                     3,  # line size (internal line size for calculations)
+                     1,1,1  # signature transform
                      )
+    '''
 
+    svgsample()
 ##################################################
 ##################################################
+
+def calculate_view_box(layers, aspect_ratio):
+    """Calculates the size of the SVG viewBox to use.
+
+    Args:
+        layers (list): the layers in the image
+        aspect_ratio (float): the height of the output divided by the width
+        margin (float): minimum amount of buffer to add around the image, relative
+            to the total dimensions
+
+    Returns:
+        tuple: a 4-tuple of floats representing the viewBox according to SVG
+            specifications ``(x, y, width, height)``.
+    """
+    D = float(root.scale_factor_D_sliderVal.get())
+    margin = D
+    min_x = min(np.nanmin(x) for x, y in layers)
+    max_x = max(np.nanmax(x) for x, y in layers)
+    min_y = min(np.nanmin(y) for x, y in layers)
+    max_y = max(np.nanmax(y) for x, y in layers)
+    height = (max_y - min_y)/2
+    width = (max_x - min_x)/2
+
+    if height > width * aspect_ratio:
+        adj_height = height * (1. + margin)
+        adj_width = adj_height / aspect_ratio
+    else:
+        adj_width = width * (1. + margin)
+        adj_height = adj_width * aspect_ratio
+
+    width_buffer = (adj_width - width) / 10.
+    height_buffer = (adj_height - height) / 10.
+
+    return (
+        min_x - width_buffer,
+        min_y - height_buffer,
+        adj_width,
+        adj_height
+    )
+
+def _layer_to_path_gen(layer):
+    """Generates an SVG path from a given layer.
+
+    Args:
+        layer (layer): the layer to convert
+
+    Yields:
+        str: the next component of the path
+    """
+    draw = False
+    for x, y in zip(*layer):
+        if np.isnan(x) or np.isnan(y):
+            draw = False
+        elif not draw:
+            yield 'M {} {}'.format(x, y)
+            draw = True
+        else:
+            yield 'L {} {}'.format(x, y)
+
+def layer_to_path(layer):
+    """Generates an SVG path from a given layer.
+
+    Args:
+        layer (layer): the layer to convert
+
+    Returns:
+        str: an SVG path
+    """
+    return ' '.join(_layer_to_path_gen(layer))
+
+def plot_to_svg(plot):
+    width = float(e1.get())
+    height =float(e2.get())
+    unit ="mm"
+    STROKE_THICKNESS = float(e3.get())
+    color = color_pick
+    """Converts a plot (list of layers) into an SVG document.
+
+    Args:
+        plot (list): list of layers that make up the plot
+        width (float): the width of the resulting image
+        height (float): the height of the resulting image
+        unit (str): the units of the resulting image if not pixels
+
+    Returns:
+        str: A stringified XML document representing the image
+    """
+    C = float(root.scale_factor_C_sliderVal.get())
+    flipped_plot = [(x, -y) for x, y in plot]
+    aspect_ratio = height / width
+    view_box = calculate_view_box(flipped_plot, aspect_ratio=aspect_ratio)
+    view_box_str = '{} {} {} {}'.format(*view_box)
+
+    #stroke_thickness = STROKE_THICKNESS * (view_box[2])
+
+    svg = ET.Element('svg', attrib={
+        'xmlns': 'http://www.w3.org/2000/svg',
+        'xmlns:inkscape': 'http://www.inkscape.org/namespaces/inkscape',
+        'width': '{}{}'.format(width, unit),
+        'height': '{}{}'.format(height, unit),
+        'viewBox': view_box_str})
+
+    for i, layer in enumerate(flipped_plot):
+        group = ET.SubElement(svg, 'g', attrib={
+            'inkscape:label': '{}-layer'.format(i),
+            'inkscape:groupmode': 'layer',
+        })
+
+
+        ET.SubElement(group, 'path', attrib={
+            'style': 'stroke-width: {}; stroke: {};'.format(STROKE_THICKNESS, color),
+            'fill': 'none',
+            'd': layer_to_path(layer)
+        })
+
+    try:
+        return ET.tostring(svg, encoding='unicode')
+    except LookupError:
+        # Python 2.x
+        return ET.tostring(svg)
+
+def layer_to_svg(layer, **kwargs):
+    """Converts a layer into an SVG image.
+
+    Wrapper around ``plot_to_svg``.
+
+    Args:
+        layer (layer): the layer to plot
+        width (float): the width of the resulting image
+        height (float): the height of the resulting image
+        unit (str): the units of the resulting image if not pixels
+
+    Returns:
+        str: A stringified XML document representing the image
+    """
+    return plot_to_svg([layer], **kwargs)
+
+def write_plot(plot, filename):
+
+
+    """Writes a plot SVG to a file.
+
+    Args:
+        plot (list): a list of layers to plot
+        filename (str): the name of the file to write
+        width (float): the width of the output SVG
+        height (float): the height of the output SVG
+        unit (str): the unit of the height and width
+    """
+    svg = plot_to_svg(plot)
+    with open(filename, 'w') as outfile:
+        outfile.write(svg)
 
 ##################################################
 #pen kit
@@ -1473,37 +1751,40 @@ def blackstripes_filters():
 def pen_kit_gen():
     print("pen kit")
     mode4 = (grid_type.get())
-
+    A = float(root.scale_factor_A_sliderVal.get())
+    B = float(root.scale_factor_B_sliderVal.get())
+    E = int(root.scale_factor_E_sliderVal.get())
 
 
     if (mode4 == "Grid___"):
         #Grid Surface Projection
         # create a texture
-        grid_density = 68
-        texture = make_grid_texture(grid_density, grid_density, 100)
+        grid_density = 100
+        texture = make_grid_texture(grid_density, grid_density, E)
         # rotate the texture
-        texture = rotate_texture(texture, rotation=65)
+        texture = rotate_texture(texture, rotation=A)
         # create the surface
-        surface = make_noise_surface(blur=28, seed=12345) * 10
+        surface = make_noise_surface(blur=B, seed=12345) * 10
         # project the texture onto the surface
-        proj = project_and_occlude_texture(texture, surface, angle=69)
+        proj = project_and_occlude_texture(texture, surface, angle=B)
         # plot the result
-        write_plot([proj], 'working/grid_surface.svg')
+        write_plot([proj], "working/example_draw.svg")
 
     if (mode4 =="Hilbert"):
         #Hilbert Curve Surface Projection
         # create a texture
         texture = hilbert_curve(7)
         # rotate the texture
-        texture = rotate_texture(texture, 30)
+        texture = rotate_texture(texture, E)
         texture = fit_texture(texture)
         # create the surface
-        surface = make_noise_surface(blur=30) * 5
+        surface = make_noise_surface(blur=B) * 5
         # project the texture onto the surface
-        proj = project_and_occlude_texture(texture, surface, 50)
+        proj = project_and_occlude_texture(texture, surface, B)
         # plot the result
-        write_plot([proj], 'working/hilbert_surface.svg')
+        write_plot([proj], "working/example_draw.svg")
 
+    svgsample()
 ##################################################
 ##################################################
 
@@ -1662,54 +1943,74 @@ def sketch(path):
             exit(0)
             pass
     w, h = IM.size
+    print(w,h)
 
     IM = IM.convert("L")
     IM = ImageOps.autocontrast(IM, 10)
+    contour_simplify = (root.contour_sliderVal.get())
+    hatch_size = (root.hatch_sliderVal.get())
+    resolution = (root.scale_sliderVal.get())
+
+    contour_simplify_str = str(contour_simplify)
+    hatch_size_str = str(hatch_size)
 
     lines = []
-    if draw_contours:
+    if (contour_simplify_str != "1"):
         lines += getcontours(IM.resize((resolution // contour_simplify, resolution // contour_simplify * h // w)),
-                             contour_simplify)
-    if draw_hatch:
+                                 contour_simplify)
+    if (hatch_size_str != "1"):
         lines += hatch(IM.resize((resolution // hatch_size, resolution // hatch_size * h // w)), hatch_size)
 
     lines = sortlines(lines)
-    if show_bitmap:
-        disp = Image.new("RGB", (resolution, resolution * h // w), (255, 255, 255))
-        draw = ImageDraw.Draw(disp)
-        for l in lines:
-            draw.line(l, (0, 0, 0), 5)
-        disp.show()
-
-    f = open(export_path, 'w')
+    f = open("working/example_draw.svg", 'w')
     f.write(makesvg(lines))
     f.close()
     print(len(lines), "strokes.")
     print("done.")
+    svgsample()
     return lines
 
 def makesvg(lines):
     print("generating svg file...")
-    out = '<svg xmlns="http://www.w3.org/2000/svg" version="1.1">'
+    canvas_w = (e1.get())
+    canvas_h = (e2.get())
+    nib_size = (e3.get())
+
+    color = color_pick
+
+    print (canvas_h, canvas_w)
+    out = '<svg xmlns="http://www.w3.org/2000/svg" width="'+canvas_w+'" height="'+canvas_h+'" viewBox="0 0 '+canvas_w+' '+canvas_h+'" version="1.1">'
     for l in lines:
         l = ",".join([str(p[0] * 0.5) + "," + str(p[1] * 0.5) for p in l])
-        out += '<polyline points="' + l + '" stroke="black" stroke-width="2" fill="none" />\n'
+        out += '<polyline points="' + l + '" stroke="'+color+'" stroke-width="'+nib_size+'" fill="none" />\n'
     out += '</svg>'
     return out
 
 def line_drawing():
     print("line drawing")
+    input_path = ("working/pixelated_image.tif")
     sketch(input_path)
+
+def tool_kit():
+    print("tool kit")
 
 ##################################################
 ##################################################
 
 root = Tk()
+
+root.geometry("1350x700")  # Width x Height
+
+# Center a window on the screen
+center_tk_window.center_on_screen(root)
+
+
+root.title("MUTATE_IMAGES")
 def submenu_and_checkboxes():
 
     # ***main menue***
     menu =Menu(root)
-    root.geometry("1150x680") #Width x Height
+
     root.config(menu=menu)
 
     subMenu = Menu(menu)
@@ -1728,39 +2029,20 @@ def submenu_and_checkboxes():
     root.v = StringVar()
     c1 = Checkbutton(root, text ="invert colors", variable=root.v,bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
     c1.deselect()
-    c1.grid(row=0, column=0)
+    c1.place(x=622, y=0)
 
     #*** check button***
     root.sim = StringVar()
     c2 = Checkbutton(root, text ="simulate", variable=root.sim, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
     c2.deselect()
-    c2.grid(row=0, column=1)
+    c2.place(x=522, y=0)
 
 
     #*** check button***
     root.white_val = StringVar()
-    c3 = Checkbutton(root, text ="white_val", variable=root.white_val, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+    c3 = Checkbutton(root, text ="white_value", variable=root.white_val, font=('Helvetica', '12'), bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
     c3.deselect()
-    c3.place(x=100,y= 640)
-
-    #*** check button***
-    root.hor_line = StringVar()
-    c4 = Checkbutton(root, text ="horizontal", variable=root.hor_line, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
-    c4.deselect()
-    c4.place(x=193,y= 640)
-
-    #*** check button***
-    root.rotate_line = StringVar()
-    c5 = Checkbutton(root, text ="rotate_line", variable=root.rotate_line, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
-    c5.deselect()
-    c5.place(x=289,y= 640)
-
-    #*** check button***
-    root.spin_line = StringVar()
-    c6 = Checkbutton(root, text ="spin_line", variable=root.spin_line, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
-    c6.deselect()
-    c6.place(x=389,y= 640)
-
+    c3.place(x=35,y= 593)
 
     #*** check button***
     root.set_colors = StringVar()
@@ -1772,27 +2054,40 @@ def submenu_and_checkboxes():
     root.ascii_small = StringVar()
     c9 = Checkbutton(root, text ="10chr", variable=root.ascii_small, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
     c9.deselect()
-    c9.place(x=200, y=473)
+    c9.place(x=200, y=491)
 
     #*** check button***
     root.ascii_large = StringVar()
     c11 = Checkbutton(root, text ="75chr", variable=root.ascii_large, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
     c11.deselect()
-    c11.place(x=260, y=473)
+    c11.place(x=260, y=491)
+
+
+    #*** check button***
+    root.SCALE_TO_CANVASE_SIZE = StringVar()
+    c12 = Checkbutton(root, text ="SCALE_TO_CANVASE_SIZE", anchor="e",variable=root.SCALE_TO_CANVASE_SIZE, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+    c12.deselect()
+    c12.place(x=30, y=0)
+
+    #*** check button***
+    root.in_to_out = StringVar()
+    c13 = Checkbutton(root, text ="in->out", anchor="e",variable=root.in_to_out, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+    c13.deselect()
+    c13.place(x=0, y=680)
 
 
 submenu_and_checkboxes()
 
 def show_entry_fields():
     print("OUTPUT X: %s\nOUTPUT Y: %s" % (e1.get(), e2.get()))
-    print("machine code: %s\nnumb of colors: %s" % (e3.get(), e4.get()))
+    print("machine code: %s\nnumb of colors: %s" % (e3.get(), e5.get()))
     print(  e5.get())
 
 def reset():
     e1.delete(0, END)
     e2.delete(0, END)
     e3.delete(0, END)
-    e4.delete(0, END)
+    #e4.delete(0, END)
     e5.delete(0, END)
 
 def getColor():
@@ -1804,16 +2099,23 @@ def getColor():
 
 def buttons_and_Labels():
     #*** text boxes***
-    Label(root, text="OUT height in mm",anchor="e",bg="gray20", fg="lime green").place(x=5, y=25, height=20, width=125)
-    Label(root, text="OUT  width in mm",anchor="e",bg="gray20", fg="lime green").place(x=5, y=45, height=20, width=125)
+    Label(root, text="scale",anchor="w",bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=730, y=610, height=20, width=50)
+    Label(root, text="space",anchor="w",bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=730, y=640, height=20, width=50)
+
+    Label(root, text="Hatch",anchor="w",bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=520, y=553, height=20, width=40)
+    Label(root, text="Edge",anchor="w",bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=560, y=553, height=20, width=40)
+    Label(root, text="Scale", anchor="w", bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=595, y=553, height=20, width=40)
+
+    Label(root, text="OUT width in mm",anchor="e",bg="gray20", fg="lime green").place(x=5, y=25, height=20, width=125)
+    Label(root, text="OUT height in mm",anchor="e",bg="gray20", fg="lime green").place(x=5, y=45, height=20, width=125)
     Label(root, text="Marker Size in mm",anchor="e",bg="gray20", fg="lime green").place(x=5, y=65, height=20, width=125)
-    Label(root, text="# of colors",anchor="e",bg="gray20", fg="lime green").place(x=5, y=85, height=20, width=125)
+    #Label(root, text="# of colors",anchor="e",bg="gray20", fg="lime green").place(x=5, y=85, height=20, width=125)
     Label(root, text="OUTPUT pixel size",anchor="e",bg="gray20", fg="lime green").place(x=5, y=105, height=20, width=125)
-    Label(root, text="Pix",anchor="e",bg="gray20", fg="lime green").place(x=5, y=145, height=20, width=123)
+    Label(root, text="Pix",anchor="e",bg="gray20", fg="lime green").place(x=5, y=305, height=20, width=123)
     Label(root, text="Red",anchor="e",bg="gray20", fg="lime green").place(x=5, y=185, height=20, width=125)
     Label(root, text="Blu",anchor="e",bg="gray20", fg="lime green").place(x=5, y=225, height=20, width=125)
     Label(root, text="Gre",anchor="e",bg="gray20", fg="lime green").place(x=5, y=265, height=20, width=125)
-    Label(root, text="B/W",anchor="e",bg="gray20", fg="lime green").place(x=5, y=305, height=20, width=125)
+    Label(root, text="B/W",anchor="e",bg="gray20", fg="lime green").place(x=5, y=145, height=20, width=125)
 
     Button(root,text='',  command=setcolorred, bg="red", fg="red",highlightbackground="lime green",activebackground="red").place(x=5,y=145,height= 40, width=40)
     Button(root,text='',  command=setcolorgreen, bg="green", fg="green",highlightbackground="lime green",activebackground="green").place(x=45,y=145,height= 40, width=40)
@@ -1825,40 +2127,36 @@ def buttons_and_Labels():
     Button(root,text='',  command=setcolorcyan, bg="cyan", fg="cyan",highlightbackground="lime green",activebackground="cyan").place(x=45,y=265,height= 40, width=40)
 
     Button(root, text='Line_drawing', command=line_drawing, bg="gray20", fg="lime green",
-           highlightbackground="gray20", activebackground="deep sky blue").place(x=523, y=527, height=25, width=100)
+           highlightbackground="gray20", activebackground="deep sky blue").place(x=523, y=527, height=25, width=110)
 
     Button(root, text='Grid_gen', command=pen_kit_gen, bg="gray20", fg="lime green",
-           highlightbackground="gray20", activebackground="deep sky blue").place(x=423, y=527, height=25, width=100)
+           highlightbackground="gray20", activebackground="deep sky blue").place(x=370, y=527, height=25, width=150)
     Button(root, text='Blackstripes', command=blackstripes_filters, bg="gray20", fg="lime green",
-           highlightbackground="gray20", activebackground="deep sky blue").place(x=323, y=527, height=25, width=100)
+           highlightbackground="gray20", activebackground="deep sky blue").place(x=640, y=527, height=25, width=130)
     Button(root, text='Gcode', command=svg_for_gcode, bg="gray20", fg="lime green", highlightbackground="gray20",
-           activebackground="deep sky blue").place(x=210, y=423, height=25, width=100)
+           activebackground="deep sky blue").place(x=770, y=527, height=25, width=100)
     Button(root, text='edit_image', command=Image_edit, bg="gray20", fg="lime green", highlightbackground="gray20",
-           activebackground="deep sky blue").place(x=105, y=423, height=25, width=100)
+           activebackground="deep sky blue").place(x=0, y=415, height=25, width=100)
     Button(root, text='path_fill', command=Fill, bg="gray20", fg="lime green", highlightbackground="gray20",
-           activebackground="deep sky blue").place(x=0, y=423, height=25, width=100)
+           activebackground="deep sky blue").place(x=0, y=465, height=25, width=100)
     Button(root, text='OUTLINE', command=OUTLINE, bg="gray20", fg="lime green", highlightbackground="gray20",
-           activebackground="deep sky blue").place(x=0, y=448, height=25, width=100)
+           activebackground="deep sky blue").place(x=0, y=515, height=25, width=100)
     Button(root, text='ASCII', command=ASCII, bg="gray20", fg="lime green", highlightbackground="gray20",
-           activebackground="deep sky blue").place(x=0, y=473, height=25, width=100)
-    Button(root, text='Color_Picker', command=getColor, bg="gray20", fg="lime green", highlightbackground="gray20",
-           activebackground="deep sky blue").place(x=285, y=0, height=25, width=100)
+           activebackground="deep sky blue").place(x=0, y=490, height=25, width=100)
     Button(root, text='img info', command=infopanel, bg="gray20", fg="lime green", highlightbackground="gray20",
-           activebackground="deep sky blue").place(x=195, y=0, height=25, width=100)
+           activebackground="deep sky blue").place(x=322, y=0, height=25, width=100)
     Button(root, text='Custom', command=custom, bg="gray20", fg="lime green", highlightbackground="gray20",
-           activebackground="deep sky blue").place(x=0, y=498, height=25, width=100)
+           activebackground="deep sky blue").place(x=0, y=440, height=25, width=100)
     Button(root, text='RGB split', command=RGB, bg="gray20", fg="lime green", highlightbackground="gray20",
-           activebackground="deep sky blue").place(x=385, y=0, height=25, width=100)
+           activebackground="deep sky blue").place(x=422, y=0, height=25, width=100)
     Button(root, text='color circles', command=build_circles, bg="gray20", fg="lime green",
-           highlightbackground="gray20", activebackground="deep sky blue").place(x=0, y=523, height=25, width=100)
+           highlightbackground="gray20", activebackground="deep sky blue").place(x=0, y=540, height=25, width=100)
     Button(root, text='color pixels', command=build_pixels, bg="gray20", fg="lime green", highlightbackground="gray20",
-           activebackground="deep sky blue").place(x=0, y=548, height=25, width=100)
+           activebackground="deep sky blue").place(x=0, y=565, height=25, width=100)
     Button(root, text='Gray_shapes', command=gray_scale, bg="gray20", fg="lime green", highlightbackground="gray20",
-           activebackground="deep sky blue").place(x=0, y=572, height=25, width=100)
-deault = StringVar(root, value='8')
-e5 = Entry(root, textvariable=deault)
-deault2 = StringVar(root, value='8')
-e4 = Entry(root, textvariable=deault2)
+           activebackground="deep sky blue").place(x=0, y=615, height=25, width=100)
+    Button(root, text='Gray_Lines', command=gray_Lines, bg="gray20", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=101, y=615, height=25, width=100)
 
 default_x_mm_output = StringVar(root, value='600')
 e1 = Entry(root, textvariable=default_x_mm_output)
@@ -1866,18 +2164,78 @@ default_y_mm_output = StringVar(root, value='800')
 e2 = Entry(root, textvariable=default_y_mm_output)
 default_markertip_mm_output = StringVar(root, value='1.6')
 e3 = Entry(root, textvariable=default_markertip_mm_output)
+deault = StringVar(root, value='8')
+e5 = Entry(root, textvariable=deault)
+
+#deault2 = StringVar(root, value='8')
+#e4 = Entry(root, textvariable=deault2)
+
+
 
 e1.place(x=135, y=25, height=20, width=75)
 e2.place(x=135, y=45, height=20, width=75)
 e3.place(x=135, y=65, height=20, width=75)
-e4.place(x=135, y=85, height=20, width=75)
+#e4.place(x=135, y=85, height=20, width=75)
 e5.place(x=135, y=105, height=20, width=75)
+
+
+
+root.scale_factor_A_sliderVal= Scale(root, from_=1, to=500, resolution=1,length=75,width=7,font=('Helvetica', '8'), orient=HORIZONTAL, bg="gray20",
+                           fg="lime green",
+                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
+root.scale_factor_A_sliderVal.place(x=365, y=600)
+root.scale_factor_B_sliderVal= Scale(root, from_=1, to=25, resolution=1,length=75,width=7,font=('Helvetica', '8'), orient=HORIZONTAL, bg="gray20",
+                           fg="lime green",
+                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
+root.scale_factor_B_sliderVal.place(x=365, y=625)
+root.scale_factor_C_sliderVal= Scale(root, from_=.1, to=10, resolution=.1,length=75,width=7,font=('Helvetica', '8'), orient=HORIZONTAL, bg="gray20",
+                           fg="lime green",
+                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
+root.scale_factor_C_sliderVal.place(x=365, y=650)
+root.scale_factor_D_sliderVal= Scale(root, from_=.01, to=2, resolution=.01,length=75,width=7,font=('Helvetica', '8'), orient=HORIZONTAL, bg="gray20",
+                           fg="lime green",
+                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
+root.scale_factor_D_sliderVal.place(x=440, y=600)
+root.scale_factor_E_sliderVal= Scale(root, from_=1, to=250, resolution=.01,length=75,width=7,font=('Helvetica', '8'), orient=HORIZONTAL, bg="gray20",
+                           fg="lime green",
+                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
+root.scale_factor_E_sliderVal.place(x=440, y=625)
+
+
+
+
+root.scale_factor_sliderVal= Scale(root, from_=1, to=50, resolution=.1,length=90,width=7,font=('Helvetica', '8'), orient=HORIZONTAL, bg="gray20",
+                           fg="lime green",
+                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
+root.scale_factor_sliderVal.place(x=640, y=600)
+
+root.space_factor_sliderVal= Scale(root, from_=1, to=10,resolution=.1, length=90,width=7,font=('Helvetica', '8'), orient=HORIZONTAL, bg="gray20",
+                           fg="lime green",
+                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
+root.space_factor_sliderVal.place(x=640, y=625)
+
+
+root.scale_sliderVal= Scale(root, from_=1, to=2500, length=100,width=7,font=('Helvetica', '8'), orient=VERTICAL, bg="gray20",
+                           fg="lime green",
+                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
+root.scale_sliderVal.place(x=587, y=575)
+
+
+root.hatch_sliderVal = Scale(root, from_=1, to=50, length=100,width=7,font=('Helvetica', '8'), orient=VERTICAL, bg="gray20",
+                           fg="lime green",
+                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
+root.hatch_sliderVal.place(x=513, y=575)
+
+root.contour_sliderVal = Scale(root, from_=1, to=50, length=100,width=7, font=('Helvetica', '8'), orient=VERTICAL, bg="gray20",
+                           fg="lime green",
+                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
+root.contour_sliderVal.place(x=557, y=575)
 
 
 root.ASCII_sliderVal = Scale(root, from_=1, to=100, length=100,width=7, orient=HORIZONTAL, bg="gray20",
                            fg="lime green",
                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
-root.ASCII_sliderVal.place(x=100, y=453)
+root.ASCII_sliderVal.place(x=100, y=476)
 
 
 root.red_sliderVal = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
@@ -1913,7 +2271,7 @@ root.green_sliderVal_max.place(x=210, y=245)
 root.tone_sliderVal = Scale(root, from_=1, to=255, length=150, orient=HORIZONTAL, bg="gray20",
                             fg="lime green",
                             highlightbackground="gray20", activebackground="deep sky blue", troughcolor="gray49")
-root.tone_sliderVal.place(x=135, y=285)
+root.tone_sliderVal.place(x=135, y=125)
 
 root.tone_sliderVal.set(125)  # Set the initial value to 125
 root.green_sliderVal.set(0)  # Set the initial value to 125
@@ -1924,7 +2282,7 @@ root.blue_sliderVal_max.set(255)  # Set the initial value to 125
 root.red_sliderVal_max.set(255)  # Set the initial value to 125
 root.ASCII_sliderVal.set(12)  # Set the initial value to 125
 
-Label(root, text="Sample_Mode", anchor="w", bg="gray20", fg="lime green").place(x=210, y=25, height=20, width=100)
+Label(root, text="Sample_Mode", anchor="w", bg="gray20", fg="lime green").place(x=105, y=325, height=20, width=100)
 MODES = [
     ("NEAREST ", "NEAREST "),
     ("BILINEAR", "BILINEAR"),
@@ -1937,14 +2295,14 @@ v.set("L")  # initialize
 count = 0
 for text, mode in MODES:
     b = Radiobutton(root, text=text, variable=v, value=mode, command=pixelate, bg="gray20", fg="lime green",
-                    highlightbackground="gray20", activebackground="deep sky blue").place(x=215, y=44 + count)
+                    highlightbackground="gray20", activebackground="deep sky blue").place(x=105, y=345 + count)
     count = count + 20
 v.set("LANCZOS ")
 
 MODES2 = [
     ("CIRCLES", "CIRCLES"),
     ("SQUARE_", "SQUARE_"),
-    ("LINE___", "LINE___"),
+
 ]
 shapes = StringVar()
 shapes.set("L")  # initialize
@@ -1952,16 +2310,16 @@ menue_count = 0
 for text2, mode2 in MODES2:
     b2 = Radiobutton(root, text=text2, variable=shapes, value=mode2, bg="gray20",
                      fg="lime green", highlightbackground="gray20", activebackground="deep sky blue").place(x=0,
-                                                                                                            y=600 + menue_count)
+                                                                                                            y=640 + menue_count)
     menue_count = menue_count + 20
 shapes.set("SQUARE_")
 
 
-Label(root, anchor="w", bg="gray20", fg="lime green").place(x=310, y=550, height=20, width=100)
+Label(root, anchor="w", bg="gray20", fg="lime green").place(x=625, y=555, height=20, width=100)
 MODES3 = [
     ("SPIRAL_", "SPIRAL_"),
     ("CROSSED", "CROSSED"),
-    ("SKETCHY", "SKETCHY"),
+
 
 ]
 
@@ -1970,11 +2328,12 @@ blackstripes_filter.set("L")  # initialize
 menu2_count = 0
 for text3, mode3 in MODES3:
     b = Radiobutton(root, text=text3, variable=blackstripes_filter, value=mode3, bg="gray20", fg="lime green",
-                    highlightbackground="gray20", activebackground="deep sky blue").place(x=315, y=554 + menu2_count)
+                    highlightbackground="gray20", activebackground="deep sky blue").place(x=640, y=555 + menu2_count)
     menu2_count = menu2_count + 20
 blackstripes_filter.set("CROSSED")
 
-Label(root, anchor="w", bg="gray20", fg="lime green").place(x=410, y=550, height=20, width=100)
+Label(root, anchor="w", bg="gray20", fg="lime green").place(x=390, y=550, height=20, width=100)
+
 MODES4 = [
     ("Grid___", "Grid___"),
     ("Hilbert", "Hilbert")
@@ -1985,9 +2344,27 @@ grid_type.set("L")  # initialize
 menu4_count = 0
 for text4, mode4 in MODES4:
     b = Radiobutton(root, text=text4, variable=grid_type, value=mode4, bg="gray20", fg="lime green",
-                    highlightbackground="gray20", activebackground="deep sky blue").place(x=415, y=554 + menu4_count)
+                    highlightbackground="gray20", activebackground="deep sky blue").place(x=370, y=554 + menu4_count)
     menu4_count = menu4_count + 20
 grid_type.set("Hilbert")
+
+
+MODES5 = [
+    ("Horizontal", "Horizontal"),
+    ("Spin", "Spin"),
+    ("Rotate", "Rotate"),
+]
+line_type = StringVar()
+line_type.set("L")  # initialize
+menue5_count = 0
+for text5, mode5 in MODES5:
+    b5 = Radiobutton(root, text=text5, variable=line_type, value=mode5, bg="gray20",
+                     fg="lime green", highlightbackground="gray20", activebackground="deep sky blue").place(x=101,
+                                                                                                            y=600 + menue_count)
+    menue_count = menue_count + 20
+line_type.set("Horizontal")
+
+
 
 
 root.configure(background='gray20')
@@ -2091,6 +2468,6 @@ def maxsize(size):
     root.pixelate_sliderVal = Scale(root, from_=2, to=size, length=150, orient=HORIZONTAL,command=cmd, bg="gray20",
                                fg="lime green",
                                highlightbackground="gray20", activebackground="deep sky blue",troughcolor="lavender")
-    root.pixelate_sliderVal.place(x=135, y=125)
+    root.pixelate_sliderVal.place(x=135, y=285)
 
 root.mainloop()
