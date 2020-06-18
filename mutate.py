@@ -1263,24 +1263,91 @@ def pixelate():
 
 def OUTLINE():
     print("outline")
-    img = cv2.imread(('working/pixelated_image.tif'))
+    max_val= root.CV_sliderVal_max.get()
+    min_val= root.CV_sliderVal.get()
+    float_min_val = float(min_val)
+    float_max_val = float(max_val)
+
+
+    img = cv2.imread(str(root.filename))
     (h, w) = img.shape[:2]
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    edged = cv2.Canny(hsv, 100, 200)
-
-
+    edged = cv2.Canny(hsv, float_min_val, float_max_val)
     contours, hierarchy = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     idx = 0
+    '''
     for c in contours:
         plt.plot(c[:, 0, 0], h - c[:, 0, 1], linewidth=1)
-    plt.axis('off')
+        print(str(plt.plot))
+    '''
 
+    with open('working/example_draw.svg', "w+") as f:
+        f.write(f'<svg width="{w}" height="{h}" xmlns="http://www.w3.org/2000/svg">')
+
+        for c in contours:
+            f.write('<path d="M')
+            for i in range(len(c)):
+                x, y = c[i][0]
+                f.write(f"{x} {y} ")
+            f.write('" style="stroke:black"/>')
+        f.write("</svg>")
+
+
+    svgsample()
+    '''
+    plt.axis('off')
     plt.savefig("working/test1.svg", format="svg")
     plt.show()
+    '''
+
 
 
 def Fill():
     print("fill")
+    '''
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Ellipse, Polygon
+
+    fig, (ax1, ax2, ax3) = plt.subplots(3)
+
+    ax1.bar(range(1, 5), range(1, 5), color='red', edgecolor='black', hatch="/")
+    ax1.bar(range(1, 5), [6] * 4, bottom=range(1, 5),
+            color='blue', edgecolor='black', hatch='//')
+    ax1.set_xticks([1.5, 2.5, 3.5, 4.5])
+
+    bars = ax2.bar(range(1, 5), range(1, 5), color='yellow', ecolor='black') + \
+        ax2.bar(range(1, 5), [6] * 4, bottom=range(1, 5),
+                color='green', ecolor='black')
+    ax2.set_xticks([1.5, 2.5, 3.5, 4.5])
+
+    patterns = ('-', '+', 'x', '\\', '*', 'o', 'O', '.')
+    for bar, pattern in zip(bars, patterns):
+        bar.set_hatch(pattern)
+
+    ax3.fill([1, 3, 3, 1], [1, 1, 2, 2], fill=False, hatch='\\')
+    ax3.add_patch(Ellipse((4, 1.5), 4, 0.5, fill=False, hatch='*'))
+    ax3.add_patch(Polygon([[0, 0], [4, 1.1], [6, 2.5], [2, 1.4]], closed=True,
+                          fill=False, hatch='/'))
+    ax3.set_xlim((0, 6))
+    ax3.set_ylim((0, 2.5))
+
+    plt.show()
+    '''
+    import random
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    patterns = ('-', '+', 'x', '\\', '*', 'o', 'O', '.', '/')
+    markers = 'os<^>p*'
+    for pattern in patterns:
+        plt.scatter(np.random.uniform(size=(3, 1)), np.random.uniform(size=(3, 1)), s=1000,
+                    marker=random.choice(markers),
+                    facecolor='white',
+                    hatch=3 * pattern, label=pattern)
+
+    plt.legend(scatterpoints=1, loc='best')
+    plt.show()
+
 
 def Image_edit():
     print("Image_edit")
@@ -1347,7 +1414,7 @@ def generate_gcode(filename):
         Still incomplete. See tests/start.svg'''
 
     # Check File Validity
-    filename = "new_line.svg"
+
     if not os.path.isfile(filename):
         raise ValueError("File \"" + filename + "\" not found.")
 
@@ -1993,17 +2060,14 @@ def line_drawing():
 
 def tool_kit():
     print("tool kit")
-
 ##################################################
 ##################################################
-
 root = Tk()
 
 root.geometry("1350x700")  # Width x Height
 
 # Center a window on the screen
 center_tk_window.center_on_screen(root)
-
 
 root.title("MUTATE_IMAGES")
 def submenu_and_checkboxes():
@@ -2074,7 +2138,6 @@ def submenu_and_checkboxes():
     c13 = Checkbutton(root, text ="in->out", anchor="e",variable=root.in_to_out, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
     c13.deselect()
     c13.place(x=0, y=680)
-
 
 submenu_and_checkboxes()
 
@@ -2273,6 +2336,15 @@ root.tone_sliderVal = Scale(root, from_=1, to=255, length=150, orient=HORIZONTAL
                             highlightbackground="gray20", activebackground="deep sky blue", troughcolor="gray49")
 root.tone_sliderVal.place(x=135, y=125)
 
+root.CV_sliderVal = Scale(root, from_=0, to=128, length=75, width=7,font=('Helvetica', '8'), orient=HORIZONTAL, bg="gray20",
+                             fg="lime green",
+                             highlightbackground="gray20", activebackground="deep sky blue", troughcolor="black")
+root.CV_sliderVal.place(x=100, y=510)
+root.CV_sliderVal_max = Scale(root, from_=129, to=255, length=75, width=7,font=('Helvetica', '8'),orient=HORIZONTAL, bg="gray20",
+                             fg="lime green",
+                             highlightbackground="gray20", activebackground="deep sky blue", troughcolor="white")
+root.CV_sliderVal_max.place(x=175, y=510)
+
 root.tone_sliderVal.set(125)  # Set the initial value to 125
 root.green_sliderVal.set(0)  # Set the initial value to 125
 root.blue_sliderVal.set(0)  # Set the initial value to 125
@@ -2281,6 +2353,9 @@ root.green_sliderVal_max.set(255)  # Set the initial value to 125
 root.blue_sliderVal_max.set(255)  # Set the initial value to 125
 root.red_sliderVal_max.set(255)  # Set the initial value to 125
 root.ASCII_sliderVal.set(12)  # Set the initial value to 125
+
+root.CV_sliderVal.set(0)  # Set the initial value to 125
+root.CV_sliderVal_max.set(255)  # Set the initial value to 125
 
 Label(root, text="Sample_Mode", anchor="w", bg="gray20", fg="lime green").place(x=105, y=325, height=20, width=100)
 MODES = [
