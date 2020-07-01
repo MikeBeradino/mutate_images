@@ -242,6 +242,32 @@ def ASCII():
 
     svgsample()
 
+def layers():
+    print("layers")
+
+def Set_layers():
+    layer_boxes = layers_box.get()
+    int_layer_boxes = int(layer_boxes)
+    count =20
+    # remove previous Checkboxes
+    for cb in checkbutton_list:
+        cb.destroy()
+    checkbutton_list.clear()
+
+    for i in range (int_layer_boxes):
+        var_name = str(i) + "_layer_box"
+        # create Checkbutton for filename and keep on list
+        button_name = Checkbutton(root,text =str(i)+" layer", anchor="e",variable=var_name, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+        button_name.deselect()
+        button_name.place(x=1335, y=count)
+        count = count + 20
+        checkbutton_list.append(button_name)
+# to keep all Checkbuttons
+checkbutton_list = []
+
+
+
+
 def gray_Lines():
     mode5 = (line_type.get())
 
@@ -253,6 +279,7 @@ def gray_Lines():
     image = Image.open("working/pixelated_image.tif").convert('LA').transpose(Image.FLIP_TOP_BOTTOM)
     pix_size = (e5.get())
     int_pix_size = int(pix_size)
+    degrees = root.rotation_slider.get()
     rows = image.size[0]  # 11
     cols = image.size[1]  # 6
     rows_out = image.size[0] * int_pix_size  # 14*11=154
@@ -361,8 +388,10 @@ def gray_Lines():
                         y2 = (y_orent)
                         x1 = (l * int_pix_size + numb)  # int_pix_size
                         y1 = (((y_orent) - int_pix_size))
-                        point1 = rotate_point((x1, y1), 45, ((x1 + x2) / 2, (y1 + y2) / 2))
-                        point2 = rotate_point((x2, y2), 45, ((x1 + x2) / 2, (y1 + y2) / 2))
+                        int_degrees = int(degrees)
+                        point1 = rotate_point((x1, y1), int_degrees, ((x1 + x2) / 2, (y1 + y2) / 2))
+                        point2 = rotate_point((x2, y2), int_degrees, ((x1 + x2) / 2, (y1 + y2) / 2))
+
                         print(point1)
                         print(point2)
                         x1, y1 = point1
@@ -435,7 +464,7 @@ def gray_scale():
             baseheight = pixel_width_to_mm
             hpercent = (baseheight / float(img.size[1]))
             wsize = int((float(img.size[0]) * float(hpercent)))
-            img = img.resize((wsize, baseheight), Image.ANTIALIAS)
+            img = img.resize((int(wsize), int(baseheight), Image.ANTIALIAS))
             img.save('working/pixelated-cs_image.tif')
         else:
             basewidth = pixel_height_to_mm
@@ -567,9 +596,6 @@ def gray_scale():
                                 draw.Rectangle((l * int_pix_size + (numb*offset)/ 2) , (-y_orent + (numb*offset)/ 2), ( (numb* offset)),
                                                ((numb*offset)), stroke_width=marker_size, stroke=color_pick, fill='none', ))
                     '''
-
-
-
 
 
     # +++++++++++++++++++++++++++++++++++++++++++++++
@@ -1020,11 +1046,8 @@ def RGB():
 
     img = Image.open(str(root.filename))
     data = img.getdata()
-
-
     if (root.v.get() == '1'):
         print("inverting")
-
         r = [(d[0], 255, 255) for d in data]
         g = [(255, d[1], 255) for d in data]
         b = [(255, 255, d[2]) for d in data]
@@ -1044,11 +1067,8 @@ def RGB():
     img.save('working/b.png')
     #### image previews ###
 
-
     red = Image.open(('working/r.png'))
-
     green = Image.open(('working/g.png'))
-
     blue = Image.open(('working/b.png'))
 
 
@@ -1268,7 +1288,6 @@ def OUTLINE():
     float_min_val = float(min_val)
     float_max_val = float(max_val)
 
-
     img = cv2.imread(str(root.filename))
     (h, w) = img.shape[:2]
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -1299,8 +1318,6 @@ def OUTLINE():
     plt.savefig("working/test1.svg", format="svg")
     plt.show()
     '''
-
-
 
 def Fill():
     print("fill")
@@ -1347,7 +1364,6 @@ def Fill():
 
     plt.legend(scatterpoints=1, loc='best')
     plt.show()
-
 
 def Image_edit():
     print("Image_edit")
@@ -2064,7 +2080,7 @@ def tool_kit():
 ##################################################
 root = Tk()
 
-root.geometry("1350x700")  # Width x Height
+root.geometry("1420x700")  # Width x Height
 
 # Center a window on the screen
 center_tk_window.center_on_screen(root)
@@ -2164,7 +2180,6 @@ def buttons_and_Labels():
     #*** text boxes***
     Label(root, text="scale",anchor="w",bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=730, y=610, height=20, width=50)
     Label(root, text="space",anchor="w",bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=730, y=640, height=20, width=50)
-
     Label(root, text="Hatch",anchor="w",bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=520, y=553, height=20, width=40)
     Label(root, text="Edge",anchor="w",bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=560, y=553, height=20, width=40)
     Label(root, text="Scale", anchor="w", bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=595, y=553, height=20, width=40)
@@ -2175,10 +2190,14 @@ def buttons_and_Labels():
     #Label(root, text="# of colors",anchor="e",bg="gray20", fg="lime green").place(x=5, y=85, height=20, width=125)
     Label(root, text="OUTPUT pixel size",anchor="e",bg="gray20", fg="lime green").place(x=5, y=105, height=20, width=125)
     Label(root, text="Pix",anchor="e",bg="gray20", fg="lime green").place(x=5, y=305, height=20, width=123)
-    Label(root, text="Red",anchor="e",bg="gray20", fg="lime green").place(x=5, y=185, height=20, width=125)
-    Label(root, text="Blu",anchor="e",bg="gray20", fg="lime green").place(x=5, y=225, height=20, width=125)
-    Label(root, text="Gre",anchor="e",bg="gray20", fg="lime green").place(x=5, y=265, height=20, width=125)
+
+    Label(root, text="X_offset",anchor="e",bg="gray20", fg="lime green").place(x=220, y=25, height=20, width=55)
+    Label(root, text="Y_offset",anchor="e",bg="gray20", fg="lime green").place(x=220, y=45, height=20, width=55)
+    Label(root, text="#layers", anchor="e", bg="gray20", fg="lime green").place(x=220, y=65, height=20, width=55)
     Label(root, text="B/W",anchor="e",bg="gray20", fg="lime green").place(x=5, y=145, height=20, width=125)
+
+    Button(root, text='SET_Layers', command=Set_layers, bg="gray20", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=222, y=85, height=20, width=100)
 
     Button(root,text='',  command=setcolorred, bg="red", fg="red",highlightbackground="lime green",activebackground="red").place(x=5,y=145,height= 40, width=40)
     Button(root,text='',  command=setcolorgreen, bg="green", fg="green",highlightbackground="lime green",activebackground="green").place(x=45,y=145,height= 40, width=40)
@@ -2233,15 +2252,11 @@ e5 = Entry(root, textvariable=deault)
 #deault2 = StringVar(root, value='8')
 #e4 = Entry(root, textvariable=deault2)
 
-
-
 e1.place(x=135, y=25, height=20, width=75)
 e2.place(x=135, y=45, height=20, width=75)
 e3.place(x=135, y=65, height=20, width=75)
 #e4.place(x=135, y=85, height=20, width=75)
 e5.place(x=135, y=105, height=20, width=75)
-
-
 
 root.scale_factor_A_sliderVal= Scale(root, from_=1, to=500, resolution=1,length=75,width=7,font=('Helvetica', '8'), orient=HORIZONTAL, bg="gray20",
                            fg="lime green",
@@ -2264,9 +2279,6 @@ root.scale_factor_E_sliderVal= Scale(root, from_=1, to=250, resolution=.01,lengt
                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
 root.scale_factor_E_sliderVal.place(x=440, y=625)
 
-
-
-
 root.scale_factor_sliderVal= Scale(root, from_=1, to=50, resolution=.1,length=90,width=7,font=('Helvetica', '8'), orient=HORIZONTAL, bg="gray20",
                            fg="lime green",
                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
@@ -2277,12 +2289,10 @@ root.space_factor_sliderVal= Scale(root, from_=1, to=10,resolution=.1, length=90
                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
 root.space_factor_sliderVal.place(x=640, y=625)
 
-
 root.scale_sliderVal= Scale(root, from_=1, to=2500, length=100,width=7,font=('Helvetica', '8'), orient=VERTICAL, bg="gray20",
                            fg="lime green",
                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
 root.scale_sliderVal.place(x=587, y=575)
-
 
 root.hatch_sliderVal = Scale(root, from_=1, to=50, length=100,width=7,font=('Helvetica', '8'), orient=VERTICAL, bg="gray20",
                            fg="lime green",
@@ -2294,23 +2304,16 @@ root.contour_sliderVal = Scale(root, from_=1, to=50, length=100,width=7, font=('
                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
 root.contour_sliderVal.place(x=557, y=575)
 
-
 root.ASCII_sliderVal = Scale(root, from_=1, to=100, length=100,width=7, orient=HORIZONTAL, bg="gray20",
                            fg="lime green",
                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
 root.ASCII_sliderVal.place(x=100, y=476)
 
-
+'''
 root.red_sliderVal = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
                            fg="lime green",
                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="red")
 root.red_sliderVal.place(x=135, y=165)
-
-root.red_sliderVal_max = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
-                           fg="lime green",
-                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="red")
-root.red_sliderVal_max.place(x=210, y=165)
-
 
 root.blue_sliderVal = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
                             fg="lime green",
@@ -2320,8 +2323,6 @@ root.blue_sliderVal_max = Scale(root, from_=1, to=255, length=75, orient=HORIZON
                             fg="lime green",
                             highlightbackground="gray20", activebackground="deep sky blue", troughcolor="blue")
 root.blue_sliderVal_max.place(x=210, y=205)
-
-
 root.green_sliderVal = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
                              fg="lime green",
                              highlightbackground="gray20", activebackground="deep sky blue", troughcolor="green")
@@ -2330,6 +2331,7 @@ root.green_sliderVal_max = Scale(root, from_=1, to=255, length=75, orient=HORIZO
                              fg="lime green",
                              highlightbackground="gray20", activebackground="deep sky blue", troughcolor="green")
 root.green_sliderVal_max.place(x=210, y=245)
+'''
 
 root.tone_sliderVal = Scale(root, from_=1, to=255, length=150, orient=HORIZONTAL, bg="gray20",
                             fg="lime green",
@@ -2344,18 +2346,32 @@ root.CV_sliderVal_max = Scale(root, from_=129, to=255, length=75, width=7,font=(
                              fg="lime green",
                              highlightbackground="gray20", activebackground="deep sky blue", troughcolor="white")
 root.CV_sliderVal_max.place(x=175, y=510)
+root.rotation_slider = Scale(root, from_=0, to=360, length=75, width=7,font=('Helvetica', '8'),orient=HORIZONTAL, bg="gray20",
+                             fg="lime green",
+                             highlightbackground="gray20", activebackground="deep sky blue", troughcolor="white")
+root.rotation_slider.place(x=180, y=670)
 
 root.tone_sliderVal.set(125)  # Set the initial value to 125
+'''
 root.green_sliderVal.set(0)  # Set the initial value to 125
 root.blue_sliderVal.set(0)  # Set the initial value to 125
 root.red_sliderVal.set(0)  # Set the initial value to 125
 root.green_sliderVal_max.set(255)  # Set the initial value to 125
 root.blue_sliderVal_max.set(255)  # Set the initial value to 125
 root.red_sliderVal_max.set(255)  # Set the initial value to 125
-root.ASCII_sliderVal.set(12)  # Set the initial value to 125
+'''
 
+root.ASCII_sliderVal.set(12)  # Set the initial value to 125
 root.CV_sliderVal.set(0)  # Set the initial value to 125
 root.CV_sliderVal_max.set(255)  # Set the initial value to 125
+# Create a spinbox
+x_offest_box = Spinbox(root, from_=1, to=99,width = 2)
+x_offest_box.place(x=285, y=25)
+y_offset_box = Spinbox(root, from_=1, to=99,width = 2)
+y_offset_box.place(x=285, y=45)
+layers_box = Spinbox(root, from_=1, to=256,width = 2)
+layers_box.place(x=285, y=65)
+
 
 Label(root, text="Sample_Mode", anchor="w", bg="gray20", fg="lime green").place(x=105, y=325, height=20, width=100)
 MODES = [
@@ -2388,7 +2404,6 @@ for text2, mode2 in MODES2:
                                                                                                             y=640 + menue_count)
     menue_count = menue_count + 20
 shapes.set("SQUARE_")
-
 
 Label(root, anchor="w", bg="gray20", fg="lime green").place(x=625, y=555, height=20, width=100)
 MODES3 = [
@@ -2438,9 +2453,6 @@ for text5, mode5 in MODES5:
                                                                                                             y=600 + menue_count)
     menue_count = menue_count + 20
 line_type.set("Horizontal")
-
-
-
 
 root.configure(background='gray20')
 buttons_and_Labels()
