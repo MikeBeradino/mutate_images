@@ -244,28 +244,56 @@ def ASCII():
 
 def layers():
     print("layers")
+    vewleng = len(view_button_list)
+    for i in range(vewleng):
+        test = root.set_button_name_var[i].get()
+        test2 = root.view_button_name_var[i].get()
+        print(test + " "+ test2+" "+ " "+str(i))
 
 def Set_layers():
+    count = 60
+    root.set_button_name_var= []
+    root.view_button_name_var = []
+    Button(root, text='View_Layer', command=layer_sample, bg="gray20",anchor="w", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=1325, y=40, height=20, width=100)
+    Button(root, text='SET_Layer', command=layers, bg="gray20", anchor="w",fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=1425, y=40, height=20, width=100)
+
     layer_boxes = layers_box.get()
     int_layer_boxes = int(layer_boxes)
-    count =20
+    
     # remove previous Checkboxes
-    for cb in checkbutton_list:
+    for cb in set_button_list and view_button_list:
         cb.destroy()
-    checkbutton_list.clear()
+        cb.forget()
+
+    for cb in set_button_list:
+        cb.destroy()
+        cb.forget()
+    view_button_list.clear()
+    set_button_list.clear()
+    root.set_button_name_var.clear()
+    root.view_button_name_var.clear()
 
     for i in range (int_layer_boxes):
-        var_name = str(i) + "_layer_box"
+
+        root.set_button_name_var.append(StringVar())
+        root.view_button_name_var.append(StringVar())
+        set_button_name = Checkbutton(root, text=str(i) + " set", anchor="e", variable=root.set_button_name_var[i], bg="gray20",
+                                       fg="lime green", highlightbackground="gray20", activebackground="deep sky blue")
+        set_button_name.deselect()
+        set_button_name.place(x=1425, y=count)
+        set_button_list.append(set_button_name)
+
         # create Checkbutton for filename and keep on list
-        button_name = Checkbutton(root,text =str(i)+" layer", anchor="e",variable=var_name, bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
-        button_name.deselect()
-        button_name.place(x=1335, y=count)
+        view_button_name = Checkbutton(root,text =str(i)+" view", anchor="e",variable=root.view_button_name_var[i], bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
+        view_button_name.deselect()
+        view_button_name.place(x=1335, y=count)
         count = count + 20
-        checkbutton_list.append(button_name)
+        view_button_list.append(view_button_name)
 # to keep all Checkbuttons
-checkbutton_list = []
-
-
+view_button_list = []
+set_button_list = []
 
 
 def gray_Lines():
@@ -430,11 +458,80 @@ def gray_Lines():
 
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
+    vewleng = len(view_button_list)
+
+    for i in range(vewleng):
+        layer_name = root.set_button_name_var[i].get()
+        if layer_name == "1":
+            d.saveSvg('Layers/layer_' + str(i) +'_.svg')
+        #test2 = root.view_button_name_var[i].get()
 
     d.saveSvg('working/example_draw-og.svg')
     d.saveSvg('working/example_draw.svg')
-    svgsample()
+    layer_sample()
     #fix_viewport_grayscale()
+def layer_sample():
+    print("layer")
+    canvas_w = (e1.get())
+    canvas_h = (e2.get())
+    nib_size = (e3.get())
+    fig = sg.SVGFigure(canvas_w, canvas_h)
+
+    fig1 = sg.fromfile('Layers/layer_1_.svg')
+    fig2 = sg.fromfile('Layers/layer_2_.svg')
+    fig3 = sg.fromfile('Layers/layer_3_.svg')
+    #fig4 = sg.fromfile('Layers/layer_4_.svg')
+    #fig5 = sg.fromfile('Layers/layer_5_.svg')
+
+
+    plot1 = fig1.getroot()
+    plot2 = fig2.getroot()
+    plot3 = fig3.getroot()
+    #plot4 = fig4.getroot()
+    #plot5 = fig5.getroot()
+
+    #plot2.moveto(280, 0, scale=0.5)
+    # append plots and labels to figure
+    fig.append([plot1,plot2,plot3])
+
+
+    fig.save("working/example_draw.svg")
+
+    svgsample()
+
+
+def svgsample():
+    drawing = svg2rlg("working/example_draw.svg")
+    renderPM.drawToFile(drawing, "working/temp.png", fmt="PNG")
+    image_pil = Image.open(("working/temp.png"))
+
+    '''
+    Resize PIL image keeping ratio and using black background.
+    '''
+
+    width = 750
+    height = 500
+    ratio_w = width / image_pil.width
+    ratio_h = height / image_pil.height
+    if ratio_w < ratio_h:
+        # It must be fixed by width
+        resize_width = width
+        resize_height = round(ratio_w * image_pil.height)
+    else:
+        # Fixed by height
+        resize_width = round(ratio_h * image_pil.width)
+        resize_height = height
+    image_resize = image_pil.resize((resize_width, resize_height), Image.ANTIALIAS)
+    background = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+    offset = (round((width - resize_width) / 2), round((height - resize_height) / 2))
+    background.paste(image_resize, offset)
+
+    sample = ImageTk.PhotoImage(background)
+    label9 = Label(image=sample)
+    label9.image = sample
+    label9.place(x=575, y=25, anchor="nw")
+    ###################################################
+    ###################################################
 
 def gray_scale():
     use_canvase_scale = root.SCALE_TO_CANVASE_SIZE.get()
@@ -925,40 +1022,6 @@ def fix_viewport_grayscale():
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
     '''
-
-def svgsample():
-    drawing = svg2rlg("working/example_draw.svg")
-    renderPM.drawToFile(drawing, "working/temp.png", fmt="PNG")
-
-    image_pil = Image.open(("working/temp.png"))
-
-    '''
-    Resize PIL image keeping ratio and using black background.
-    '''
-
-    width = 750
-    height = 500
-    ratio_w = width / image_pil.width
-    ratio_h = height / image_pil.height
-    if ratio_w < ratio_h:
-        # It must be fixed by width
-        resize_width = width
-        resize_height = round(ratio_w * image_pil.height)
-    else:
-        # Fixed by height
-        resize_width = round(ratio_h * image_pil.width)
-        resize_height = height
-    image_resize = image_pil.resize((resize_width, resize_height), Image.ANTIALIAS)
-    background = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-    offset = (round((width - resize_width) / 2), round((height - resize_height) / 2))
-    background.paste(image_resize, offset)
-
-    sample = ImageTk.PhotoImage(background)
-    label9 = Label(image=sample)
-    label9.image = sample
-    label9.place(x=575, y=25, anchor="nw")
-    ###################################################
-    ###################################################
 
 def imagestuff():
     # pick an image file you have .bmp  .jpg  .gif.  .png
@@ -2080,7 +2143,7 @@ def tool_kit():
 ##################################################
 root = Tk()
 
-root.geometry("1420x700")  # Width x Height
+root.geometry("1520x700")  # Width x Height
 
 # Center a window on the screen
 center_tk_window.center_on_screen(root)
@@ -2191,13 +2254,13 @@ def buttons_and_Labels():
     Label(root, text="OUTPUT pixel size",anchor="e",bg="gray20", fg="lime green").place(x=5, y=105, height=20, width=125)
     Label(root, text="Pix",anchor="e",bg="gray20", fg="lime green").place(x=5, y=305, height=20, width=123)
 
-    Label(root, text="X_offset",anchor="e",bg="gray20", fg="lime green").place(x=220, y=25, height=20, width=55)
-    Label(root, text="Y_offset",anchor="e",bg="gray20", fg="lime green").place(x=220, y=45, height=20, width=55)
-    Label(root, text="#layers", anchor="e", bg="gray20", fg="lime green").place(x=220, y=65, height=20, width=55)
+    Label(root, text="X_offset",anchor="e",bg="gray20", fg="lime green").place(x=1365, y=0, height=20, width=55)
+    Label(root, text="Y_offset",anchor="e",bg="gray20", fg="lime green").place(x=1465, y=0, height=20, width=55)
+    #Label(root, text="#layers", anchor="e", bg="gray20", fg="lime green").place(x=1365, y=20, height=20, width=55)
+
     Label(root, text="B/W",anchor="e",bg="gray20", fg="lime green").place(x=5, y=145, height=20, width=125)
 
-    Button(root, text='SET_Layers', command=Set_layers, bg="gray20", fg="lime green", highlightbackground="gray20",
-           activebackground="deep sky blue").place(x=222, y=85, height=20, width=100)
+    Button(root, text='#layers', command=Set_layers, bg="gray20", fg="lime green", highlightbackground="gray20", activebackground="deep sky blue").place(x=1360, y=20, height=25, width=65)
 
     Button(root,text='',  command=setcolorred, bg="red", fg="red",highlightbackground="lime green",activebackground="red").place(x=5,y=145,height= 40, width=40)
     Button(root,text='',  command=setcolorgreen, bg="green", fg="green",highlightbackground="lime green",activebackground="green").place(x=45,y=145,height= 40, width=40)
@@ -2364,13 +2427,15 @@ root.red_sliderVal_max.set(255)  # Set the initial value to 125
 root.ASCII_sliderVal.set(12)  # Set the initial value to 125
 root.CV_sliderVal.set(0)  # Set the initial value to 125
 root.CV_sliderVal_max.set(255)  # Set the initial value to 125
+
+
 # Create a spinbox
 x_offest_box = Spinbox(root, from_=1, to=99,width = 2)
-x_offest_box.place(x=285, y=25)
+x_offest_box.place(x=1325, y=0)
 y_offset_box = Spinbox(root, from_=1, to=99,width = 2)
-y_offset_box.place(x=285, y=45)
+y_offset_box.place(x=1425, y=0)
 layers_box = Spinbox(root, from_=1, to=256,width = 2)
-layers_box.place(x=285, y=65)
+layers_box.place(x=1325, y=20 )
 
 
 Label(root, text="Sample_Mode", anchor="w", bg="gray20", fg="lime green").place(x=105, y=325, height=20, width=100)
