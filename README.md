@@ -1,2 +1,4 @@
 # mutate_images
-pyton raster to vector utility
+This project is under development.
+
+This is a pyton lang raster to vector utility. For use with g-code compatable machines.
