@@ -2,6 +2,7 @@ import center_tk_window
 from tkinter import filedialog
 from tkinter import *
 import tkinter.ttk as ttk
+import tkinter.scrolledtext as st
 from tkcolorpicker import askcolor
 from PIL import Image
 from PIL import ImageTk
@@ -9,13 +10,17 @@ from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
 import drawSvg as draw
 import svgutils.transform as sg
+import re
 from math import sin, cos, radians
-import cv2
+import sys
+sys.setrecursionlimit(10**6) # needed for some opencv--> gcode conversions
 import numpy as np
 import matplotlib.pyplot as plt
 # External Imports
 import os
 import sys
+import re
+from array import *
 import xml.etree.ElementTree as ET
 
 ###########################################################
@@ -25,7 +30,6 @@ import xml.etree.ElementTree as ET
 sys.path.insert(0, './lib') # (Import from lib folder)
 import shapes as shapes_pkg
 from shapes import point_generator
-from config import *
 DEBUGGING = True
 SVG = set(['rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'path'])
 #############################################################
@@ -71,7 +75,18 @@ except:
     no_cv = True
 ###########################################################
 ###########################################################
+#import image editor
+
+###########################################################
+###########################################################
+###########################################################
+###########################################################
+#import eggbot
+#import egg_main
+###########################################################
+###########################################################
 color_pick="#000000"
+
 def setcolorred():
     global color_pick
     color_pick ="#ff0000"
@@ -141,8 +156,75 @@ def rotate_polygon(polygon, angle, center_point=(0, 0)):
         rotated_polygon.append(rotated_corner)
     return rotated_polygon
 
+def test_custom():
+    if root.SVGfile == "":
+        # *** open file ***
+        root.SVGfile = filedialog.askopenfilename(initialdir="svgs4images", title="Select file", filetypes=(("SVG files", "*.svg"), ("all files", "*.*")))
+        print ("opening file at  " +str(root.SVGfile))
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # get nib size
+    # get pix size
+    # caculate svgs per pixel
+
+    # make temp " pixels
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    svgfile = (str(root.SVGfile))
+    image = Image.open("working/pixelated_image.tif").convert('LA').rotate(180).transpose(Image.FLIP_LEFT_RIGHT)
+    pix_size = (e5.get())
+    int_pix_size = int(pix_size)
+    rows = image.size[0]  # 11
+    cols = image.size[1]  # 6
+    rows_out = image.size[0] * int_pix_size  # 14*11=154
+    cols_out = image.size[1] * int_pix_size  # 14*6=84
+    px = image.load()
+    gray_scale_values = 256 / int_pix_size
+    fig = sg.SVGFigure(rows_out, cols_out)
+    svg_name = []
+    svg_to_append = []
+    number=0
+
+
+
+    for l in range(rows):
+        for j in range(cols):
+            color_index = ((px[l, j]))
+            gray, alpa = color_index
+            color_flip = 256 - gray
+            numb_of_squares = color_flip / gray_scale_values
+            if (rows_out <= cols_out):
+                y_orent = (cols_out - (j * int_pix_size))
+            else:
+                y_orent = (cols_out - (j * int_pix_size))
+
+            svg_name.append([str(number)])
+            svg_to_append.append([str(number)])
+            svg_name[number] = sg.fromfile(svgfile)
+            svg_to_append[number] = svg_name[number].getroot()
+
+            svg_to_append[number].moveto(l * int_pix_size, (y_orent), scale=1)
+            fig.append([svg_to_append[number]])
+            number = number+1
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    setleng = len(set_button_list)
+    for i in range(setleng):
+        layer_name = root.set_button_name_var[i].get()
+        if layer_name == "1":
+            fig.save('Layers/layer_' + str(i) +'_.svg')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+
+    layer_sample()
+
 def custom():
-    print("custom")
+
+    if root.SVGfile == "":
+        # *** open file ***
+        root.SVGfile = filedialog.askopenfilename(initialdir="svgs4images", title="Select file", filetypes=(("SVG files", "*.svg"), ("all files", "*.*")))
+        print ("opening file at  " +str(root.SVGfile))
+
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
     svgfile = (str(root.SVGfile))
@@ -165,9 +247,8 @@ def custom():
             gray, alpa = color_index
             color_flip = 256 - gray
             numb_of_squares = color_flip / gray_scale_values
-            print(numb_of_squares)
             if (rows_out <= cols_out):
-                y_orent = (cols_out - (j * int_pix_size))  #
+                y_orent = (cols_out - (j * int_pix_size))
             else:
                 y_orent = (cols_out - (j * int_pix_size))
 
@@ -181,14 +262,20 @@ def custom():
             number = number+1
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
-    # save generated SVG files
-    fig.save('working/example_draw.svg')
 
-    #d.saveSvg('working/example_draw.svg')
-    svgsample()
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    setleng = len(set_button_list)
+    for i in range(setleng):
+        layer_name = root.set_button_name_var[i].get()
+        if layer_name == "1":
+            fig.save('Layers/layer_' + str(i) +'_.svg')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+
+    layer_sample()
 
 def ASCII():
-    print("ascii")
+
     image = Image.open("working/pixelated_image.tif").convert('LA').rotate(180).transpose(Image.FLIP_LEFT_RIGHT)
 
     txt_size = root.ASCII_sliderVal.get()
@@ -204,7 +291,7 @@ def ASCII():
     txt_to_append = []
     number = 0
 
-    shortASCII =  " .:-=+*#%@"
+    shortASCII =" .:-=+*#%@"
     longASCII = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,^'. "
     for l in range(rows):
         for j in range(cols):
@@ -236,19 +323,30 @@ def ASCII():
 
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
-    # save generated SVG files
-    fig.save('working/example_draw.svg')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    setleng = len(set_button_list)
+    for i in range(setleng):
+        layer_name = root.set_button_name_var[i].get()
+        if layer_name == "1":
+            fig.save('Layers/layer_' + str(i) +'_.svg')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
 
-
-    svgsample()
+    layer_sample()
 
 def layers():
-    print("layers")
+    x_offset = x_offest_box.get()
+    y_offset = y_offset_box.get()
+    scale = scale_box.get()
+    x_offset_float= float(x_offset)
+    y_offset_float=float(y_offset)
+    scale_float=float(scale)
     vewleng = len(view_button_list)
     for i in range(vewleng):
-        test = root.set_button_name_var[i].get()
-        test2 = root.view_button_name_var[i].get()
-        print(test + " "+ test2+" "+ " "+str(i))
+        set_checked = root.set_button_name_var[i].get()
+        if set_checked == "1":
+            transform_data[i]=[x_offset_float,y_offset_float,scale_float]
 
 def Set_layers():
     count = 60
@@ -272,6 +370,7 @@ def Set_layers():
         cb.forget()
     view_button_list.clear()
     set_button_list.clear()
+    transform_data.clear()
     root.set_button_name_var.clear()
     root.view_button_name_var.clear()
 
@@ -281,29 +380,27 @@ def Set_layers():
         root.view_button_name_var.append(StringVar())
         set_button_name = Checkbutton(root, text=str(i) + " set", anchor="e", variable=root.set_button_name_var[i], bg="gray20",
                                        fg="lime green", highlightbackground="gray20", activebackground="deep sky blue")
-        set_button_name.deselect()
+        set_button_name.select()
         set_button_name.place(x=1425, y=count)
         set_button_list.append(set_button_name)
 
         # create Checkbutton for filename and keep on list
         view_button_name = Checkbutton(root,text =str(i)+" view", anchor="e",variable=root.view_button_name_var[i], bg="gray20", fg="lime green",highlightbackground="gray20",activebackground="deep sky blue")
-        view_button_name.deselect()
+        view_button_name.select()
         view_button_name.place(x=1335, y=count)
         count = count + 20
         view_button_list.append(view_button_name)
+        transform_data.append([0, 0, 1.0])
 # to keep all Checkbuttons
 view_button_list = []
 set_button_list = []
-
+transform_data = [[0,0,1.0],[0,0,1.0]]
 
 def gray_Lines():
     mode5 = (line_type.get())
-
     ("Horizontal", "Horizontal"),
     ("Spin", "Spin"),
     ("Rotate", "Rotate"),
-
-    print("gray_lines")
     image = Image.open("working/pixelated_image.tif").convert('LA').transpose(Image.FLIP_TOP_BOTTOM)
     pix_size = (e5.get())
     int_pix_size = int(pix_size)
@@ -313,54 +410,41 @@ def gray_Lines():
     rows_out = image.size[0] * int_pix_size  # 14*11=154
     cols_out = image.size[1] * int_pix_size  # 14*6=84
     px = image.load()
-    print(rows_out, cols_out)
     d = draw.Drawing(rows_out, cols_out, origin=(0, -cols_out), displayInline=False)  # more wtf !!!
     gray_scale_values = 256 / int_pix_size
-
     for l in range(rows):
         for j in range(cols):
             color_index = ((px[l, j]))
             gray, alpa = color_index
-
             color_flip = 256 - gray
             numb_of_squares = color_flip / gray_scale_values
-
             int_number_of_squares = int(numb_of_squares)
             if (rows_out <= cols_out):
                 y_orent = (cols_out - (j * int_pix_size))  #
             else:
                 y_orent = (cols_out - (j * int_pix_size))
-
             if (root.white_val.get() == '1'):
                 if (int_number_of_squares != 1):
                     for numb in range(int_number_of_squares):
                         if (mode5 == "Horizontal"):
-
                             x2 = ((l * int_pix_size) + int_pix_size/2)
                             y2 = (y_orent+ numb)-int_pix_size
                             x1 = ((l * int_pix_size) + int_pix_size/2) # int_pix_size
                             y1 = (((y_orent) + int_pix_size)+ numb)-int_pix_size
-
                             point1 = rotate_point((x1, y1), 90, ((x1 + x2) / 2, (y1 + y2) / 2))
                             point2 = rotate_point((x2, y2), 90, ((x1 + x2) / 2, (y1 + y2) / 2))
-                            print(point1)
-                            print(point2)
                             x1, y1pos = point1
                             x2, y2pos = point2
                             y1 = -y1pos
                             y2 = -y2pos
 
                         elif (mode5 == "Spin"):
-                            print("spin_line")
                             x2 = (l * int_pix_size + numb)
                             y2 = (y_orent)
                             x1 = (l * int_pix_size + numb)  # int_pix_size
                             y1 = (((y_orent) - int_pix_size))
-
                             point1 = rotate_point((x1, y1), gray, ((x1 + x2) / 2, (y1 + y2) / 2))
                             point2 = rotate_point((x2, y2), gray, ((x1 + x2) / 2, (y1 + y2) / 2))
-                            print(point1)
-                            print(point2)
                             x1, y1pos = point1
                             x2, y2pos = point2
                             y1 = -y1pos
@@ -372,7 +456,6 @@ def gray_Lines():
                             y2 = (y_orent)
                             x1 = (l * int_pix_size + numb)  # int_pix_size
                             y1 = (((y_orent) - int_pix_size))
-
                             point1 = rotate_point((x1, y1), 45, ((x1 + x2) / 2, (y1 + y2) / 2))
                             point2 = rotate_point((x2, y2), 45, ((x1 + x2) / 2, (y1 + y2) / 2))
                             x1, y1pos = point1
@@ -380,13 +463,10 @@ def gray_Lines():
                             y1 = -y1pos
                             y2 = -y2pos
                         else:
-
                             x1 = (l * int_pix_size + numb)
                             y1 = (y_orent)
                             x2 = (l * int_pix_size + numb)  # int_pix_size
                             y2 = (y_orent) + int_pix_size
-
-                        print(x1, y1, x2, y2)
                         d.append(draw.Lines((x1), (y1),
                                             (x2), (y2),
                                             stroke_width=1,
@@ -397,20 +477,14 @@ def gray_Lines():
             else:
                 for numb in range(int_number_of_squares):
                     if (mode5 == "Horizontal"):
-
                         x2 = ((l * int_pix_size) + int_pix_size / 2)
                         y2 = (y_orent + numb) - int_pix_size
                         x1 = ((l * int_pix_size) + int_pix_size / 2)  # int_pix_size
                         y1 = (((y_orent) + int_pix_size) + numb) - int_pix_size
-
                         point1 = rotate_point((x1, y1), 90, ((x1 + x2) / 2, (y1 + y2) / 2))
                         point2 = rotate_point((x2, y2), 90, ((x1 + x2) / 2, (y1 + y2) / 2))
-                        print(point1)
-                        print(point2)
                         x1, y1 = point1
                         x2, y2 = point2
-
-
                     elif (mode5 == "Rotate"):
                         x2 = (l * int_pix_size + numb)
                         y2 = (y_orent)
@@ -419,96 +493,66 @@ def gray_Lines():
                         int_degrees = int(degrees)
                         point1 = rotate_point((x1, y1), int_degrees, ((x1 + x2) / 2, (y1 + y2) / 2))
                         point2 = rotate_point((x2, y2), int_degrees, ((x1 + x2) / 2, (y1 + y2) / 2))
-
-                        print(point1)
-                        print(point2)
                         x1, y1 = point1
                         x2, y2 = point2
-
                     elif (mode5 == "Spin"):
-                        print("spin_line")
                         x2 = (l * int_pix_size + numb)
                         y2 = (y_orent)
                         x1 = (l * int_pix_size + numb)  # int_pix_size
                         y1 = (((y_orent) - int_pix_size))
-
                         point1 = rotate_point((x1, y1), gray, ((x1 + x2) / 2, (y1 + y2) / 2))
                         point2 = rotate_point((x2, y2), gray, ((x1 + x2) / 2, (y1 + y2) / 2))
-                        print(point1)
-                        print(point2)
                         x1, y1 = point1
                         x2, y2 = point2
-
                     else:
-
                         x1 = (l * int_pix_size + numb)
                         y1 = (y_orent)
                         x2 = (l * int_pix_size + numb) # int_pix_size
                         y2 = (y_orent) - int_pix_size
-
-
-
-                    print(x1, y1, x2, y2)
                     d.append(draw.Lines((x1), (-y1), #########wtf !!!!!!
                                         (x2), (-y2),
                                         stroke_width=1,
                                         stroke=color_pick,
                                         fill='none',
                                         close=False))
-
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
-    vewleng = len(view_button_list)
-
-    for i in range(vewleng):
+    setleng = len(set_button_list)
+    for i in range(setleng):
         layer_name = root.set_button_name_var[i].get()
         if layer_name == "1":
             d.saveSvg('Layers/layer_' + str(i) +'_.svg')
-        #test2 = root.view_button_name_var[i].get()
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
 
-    d.saveSvg('working/example_draw-og.svg')
-    d.saveSvg('working/example_draw.svg')
     layer_sample()
-    #fix_viewport_grayscale()
+
 def layer_sample():
-    print("layer")
     canvas_w = (e1.get())
     canvas_h = (e2.get())
     nib_size = (e3.get())
     fig = sg.SVGFigure(canvas_w, canvas_h)
-
-    fig1 = sg.fromfile('Layers/layer_1_.svg')
-    fig2 = sg.fromfile('Layers/layer_2_.svg')
-    fig3 = sg.fromfile('Layers/layer_3_.svg')
-    #fig4 = sg.fromfile('Layers/layer_4_.svg')
-    #fig5 = sg.fromfile('Layers/layer_5_.svg')
-
-
-    plot1 = fig1.getroot()
-    plot2 = fig2.getroot()
-    plot3 = fig3.getroot()
-    #plot4 = fig4.getroot()
-    #plot5 = fig5.getroot()
-
-    #plot2.moveto(280, 0, scale=0.5)
-    # append plots and labels to figure
-    fig.append([plot1,plot2,plot3])
-
-
+    viewleng = len(view_button_list)
+    for i in range(viewleng):
+        layer_name = root.view_button_name_var[i].get()
+        if layer_name == "1":
+            str_i = sg.fromfile('Layers/layer_'+str(i)+'_.svg')
+            plot_i = str_i.getroot()
+            x_offset,y_offset,scale_new = transform_data[i]
+            print(x_offset,y_offset,scale_new)
+            plot_i.moveto(x_offset,y_offset, scale=scale_new)
+            fig.append([plot_i])
     fig.save("working/example_draw.svg")
 
     svgsample()
-
 
 def svgsample():
     drawing = svg2rlg("working/example_draw.svg")
     renderPM.drawToFile(drawing, "working/temp.png", fmt="PNG")
     image_pil = Image.open(("working/temp.png"))
-
     '''
     Resize PIL image keeping ratio and using black background.
     '''
-
     width = 750
     height = 500
     ratio_w = width / image_pil.width
@@ -535,7 +579,6 @@ def svgsample():
 
 def gray_scale():
     use_canvase_scale = root.SCALE_TO_CANVASE_SIZE.get()
-    print("gray_scale")
     mode2 = (shapes.get())
     marker_size = float(e3.get())
     inout = root.in_to_out.get()
@@ -697,40 +740,38 @@ def gray_scale():
 
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
+    setleng = len(set_button_list)
+    for i in range(setleng):
+        layer_name = root.set_button_name_var[i].get()
+        if layer_name == "1":
+            d.saveSvg('Layers/layer_' + str(i) +'_.svg')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
 
-    d.saveSvg('working/example_draw-og.svg')
-
-    d.saveSvg('working/example_draw.svg')
-    svgsample()
-    #fix_viewport_grayscale()
+    layer_sample()
 
 def build_pixels():
-    print("build_pixels")
     print(e5.get())
     mode2 = (shapes.get())
     print(mode2)
 
     if (root.sim.get() == '1'):
-        print("toggled")
         stroke_val = 0.3
     else:
         stroke_val = 1
 
-
-    redval  = root.red_sliderVal.get()
-    blueval = root.blue_sliderVal.get()
-    greenval=root.green_sliderVal.get()
-
-    toneval = root.tone_sliderVal.get()
-
-    redval_max  = root.red_sliderVal_max.get()
-    blueval_max = root.blue_sliderVal_max.get()
-    greenval_max=root.green_sliderVal_max.get()
+    redval  = 1
+    blueval = 1
+    greenval=1
+    toneval = 128
+    redval_max  = 255
+    blueval_max = 255
+    greenval_max=255
 
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
 
-    image = Image.open("working/pixelated_image.tif")
+    image = Image.open("working/pixelated_image.tif").transpose(Image.FLIP_TOP_BOTTOM)
     px = image.load()
     pix_size = (e5.get())
     int_pix_size = int(pix_size)
@@ -747,8 +788,6 @@ def build_pixels():
         for j in range(cols):
             color_index = ((px[l, j]))
             r,g,b = color_index
-
-            print(r,g,b)
             if (r > redval_max):
                 r = redval_max
             if (r < redval):
@@ -764,9 +803,6 @@ def build_pixels():
             if (b < blueval):
                 b = blueval
 
-            print(r,g, b)
-
-
             if (rows_out <= cols_out):
                 y_orent = (cols_out - (j * int_pix_size))  #
             else:
@@ -777,18 +813,9 @@ def build_pixels():
                 g = 0
                 b = 0
 
-            print(r)
-            print(g)
-            print(b)
-
             Cy = (1-(r/redval))
             Ma = (1-(g / greenval))
             Ye = (1-(b / blueval))
-
-
-
-            print( Cy , Ma, Ye)
-
 
             var_K = 1
             if (Cy < var_K):
@@ -808,25 +835,16 @@ def build_pixels():
                 Cy = (Cy - var_K) / (1 - var_K)
                 Ma = (Ma - var_K) / (1 - var_K)
                 Ye = (Ye - var_K) / (1 - var_K)
-                print("color")
-                print(Cy,Ma,Ye)
-
-
 
             numb_of_squares_magenta = Ma * int_pix_size
             int_number_of_squares_magenta = int(numb_of_squares_magenta)
-            print("magenta")
-            print(int_number_of_squares_magenta)
 
             numb_of_squares_cyan = Cy * int_pix_size
             int_number_of_squares_cyan = int(numb_of_squares_cyan)
-            print("cyan")
-            print(int_number_of_squares_cyan)
 
             numb_of_squares_yellow = Ye * int_pix_size
             int_number_of_squares_yellow = int(numb_of_squares_yellow)
-            print("yellow")
-            print(int_number_of_squares_yellow)
+
 
             if (r < toneval and g < toneval and b < toneval):
                 color_flip_black = 1.0
@@ -849,43 +867,41 @@ def build_pixels():
             for numb in range(int_number_of_squares_yellow):
                 d.append(draw.Rectangle((l * int_pix_size + numb / 2), (y_orent + numb / 2), int_pix_size - numb, int_pix_size - numb, stroke_width=0.5, stroke='yellow',stroke_opacity=stroke_val, fill='none', ))
 
+
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
-
-    d.saveSvg('working/example_draw.svg')
-
-    svgsample()
+    setleng = len(set_button_list)
+    for i in range(setleng):
+        layer_name = root.set_button_name_var[i].get()
+        if layer_name == "1":
+            d.saveSvg('Layers/layer_' + str(i) +'_.svg')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    fix_svg_pixels_cirlces()
 
 def build_circles():
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
 
-    image = Image.open("working/pixelated_image.tif")
+    image = Image.open("working/pixelated_image.tif").transpose(Image.FLIP_TOP_BOTTOM)
     px = image.load()
-    print("image.size   = (%d, %d)" % image.size)
     circle_size = (e5.get())
 
     int_circle_size = int(circle_size)
-    print (type(int_circle_size))
     rows = image.size[0]#11
     cols = image.size[1]#6
-
     rows_out = image.size[0] * int_circle_size#14*11=154
     cols_out = image.size[1] * int_circle_size#14*6=84
-
-
     d = draw.Drawing(rows_out,cols_out, origin=(-int_circle_size/2,int_circle_size/2), displayInline=False)
-
-    redval  = root.red_sliderVal.get()
-    blueval = root.blue_sliderVal.get()
-    greenval=root.green_sliderVal.get()
-    toneval = root.tone_sliderVal.get()
+    redval  = 1
+    blueval = 1
+    greenval=1
+    toneval = 128
 
     for l in range(rows):
         for j in range(cols):
             color_index = ((px[l, j]))
             r, g, b = color_index
-            print(color_index)
             if (rows_out <= cols_out):
                 y_orent=(cols_out-(j*int_circle_size))#
             else:
@@ -919,10 +935,69 @@ def build_circles():
 
     # +++++++++++++++++++++++++++++++++++++++++++++++
     # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    setleng = len(set_button_list)
+    for i in range(setleng):
+        layer_name = root.set_button_name_var[i].get()
+        if layer_name == "1":
+            d.saveSvg('Layers/layer_' + str(i) +'_.svg')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    fix_svg_pixels_cirlces()
 
-    d.saveSvg('working/example_draw.svg')
+def fix_svg_pixels_cirlces():
+    print("fixing")
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    path= ""
+    temp_file_path = ""
+    setleng = len(set_button_list)
+    for i in range(setleng):
+        layer_name = root.set_button_name_var[i].get()
+        if layer_name == "1":
+            path = ('Layers/layer_' + str(i)+'_.svg')
+            temp_file_path = ('Layers/layer_' + str(i)+'temp_.svg')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    svg_to_fix = open(path, 'r')
+    outfile = open(temp_file_path, 'w')
+    number_of_lines = 0
+    with open(path, 'r') as f:
+        for line in f:
+            number_of_lines += 1
 
-    svgsample()
+    count = 0
+    index = 0
+    w_h =[0,0,0,0,0]
+    for text in svg_to_fix:
+        if count <= 2 :
+            width_raw = re.findall('width=".+?" ',text)
+            width_temp = re.findall(r'\d+', str(width_raw))
+            width = ''.join(width_temp)
+            height_raw = re.findall('width=".+?" ',text)
+            height_temp = re.findall(r'\d+', str(height_raw))
+            height = ''.join(height_temp)
+
+            #res = list(map(int, width_temp))
+
+        '''
+        for x in range (len(res)):
+            if res[x] >= 0:
+                w_h[index]= (res[x])
+                index +=1
+        '''
+        if count == 3 :
+            #width = str(w_h[2])
+            #height =str(w_h[3])
+            outfile.write('<?xml version="1.0" encoding="UTF-8"?>'+'\n')
+            outfile.write('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="'+width+' height='+height+'"  viewBox="0 0 '+width+' '+height+'">'+ '\n')
+        if count > 2 and count < number_of_lines:
+            allpos = text.replace('-', '')
+            outfile.write(allpos)
+        count +=1
+    outfile.close()
+    os.rename(temp_file_path,path)
+    layer_sample()
 
 def fix_viewport_grayscale():
     # create new SVG figure
@@ -1027,16 +1102,10 @@ def imagestuff():
     # pick an image file you have .bmp  .jpg  .gif.  .png
     # (if not in the working directory, give full path)
     pil_image = Image.open(str(root.filename))
-    # retrieve some information
-    print()
-    print("image.size   = (%d, %d)" +str( pil_image.size[1:-1]))
-    print()
-    print("image.format = %s" % pil_image.format)  # 'JPEG'
     # common modes are
     # "L" (luminance) for greyscale images,
     # "RGB" for true color images,
     # "CMYK" for pre-press images
-    print("image.mode   = %s" % pil_image.mode)    # 'RGB'
     filepath = str(root.filename)
     shortpath = filepath.rsplit("/",1)[1]
     imageInfoString = ("Opening file:  " +shortpath+"\n"+"image.size = (%d, %d)" % pil_image.size +"\n"+ "image.format = %s" % pil_image.format+"\n"+"image.mode   = %s" % pil_image.mode)
@@ -1071,7 +1140,6 @@ def savefile():
 # *** display images***
 def displayimageSample():
     image = Image.open(str(root.filename))
-    print("image.size   = (%d, %d)" % image.size)
     # 200x200 is good
 
     if image.size[1] > image.size[0]:
@@ -1110,7 +1178,6 @@ def RGB():
     img = Image.open(str(root.filename))
     data = img.getdata()
     if (root.v.get() == '1'):
-        print("inverting")
         r = [(d[0], 255, 255) for d in data]
         g = [(255, d[1], 255) for d in data]
         b = [(255, 255, d[2]) for d in data]
@@ -1202,8 +1269,6 @@ def RGB():
         p_g = [(255, di[1], 255) for di in data_pix]
         p_b = [(255, 255, di[2]) for di in data_pix]
     else:
-        print("normal")
-
         # Suppress specific bands (e.g. (255, 120, 65) -> (0, 120, 0) for g)
         p_r = [(di[0], 0, 0) for di in data_pix]
         p_g = [(0, di[1], 0) for di in data_pix]
@@ -1261,21 +1326,18 @@ def RGB():
     label11.image = photoblue_thumb
     label11.place(x=1075, y=275, anchor="nw")
 
+def set_px_by_box():
+    box_scale =e6.get()
+    int_box_scale = int(box_scale)
+    root.pixelate_sliderVal.set(int_box_scale)
+
 def pixelate():
-    print(v.get())
     # Open Paddington
     img = Image.open(str(root.filename))
-
-    # Resize smoothly down to 16x16 pixels
-    #size = 60
     size = (root.pixelate_sliderVal.get())
+
+
     mode = (v.get())
-
-    print (mode)
-    print (size)
-    print(img.size[0])
-    print (img.size[1])
-
     # Scale back up using NEAREST to original
     if v.get() != NONE:
 
@@ -1284,17 +1346,11 @@ def pixelate():
         else:
             maxsize=img.size[0]
 
-        print (maxsize)
+
 
         wpercent = (size / float(img.size[0]))
         hsize = int((float(img.size[1])*float(wpercent)))
 
-        ###
-        # PIL.Image.NEAREST,
-        # PIL.Image.BILINEAR,
-        # PIL.Image.BICUBIC
-        # PIL.Image.LANCZOS
-        ###
         if mode == "BILINEAR":
             imgSmall = img.resize((int(size), int(hsize)), resample=Image.BILINEAR)
         if mode == "NEAREST ":
@@ -1315,10 +1371,7 @@ def pixelate():
 
     ###################################################
     ###################################################
-
-
     pixelateimg = Image.open(('working/result.tif'))
-
     width = 250
     height = 250
     ratio_w = width / pixelateimg.width
@@ -1345,74 +1398,61 @@ def pixelate():
     labelpixel.place(x=325, y=275, anchor="nw")
 
 def OUTLINE():
-    print("outline")
     max_val= root.CV_sliderVal_max.get()
     min_val= root.CV_sliderVal.get()
     float_min_val = float(min_val)
     float_max_val = float(max_val)
+    stroke_color = color_pick
+    stroke_width = e3.get()
 
     img = cv2.imread(str(root.filename))
+
     (h, w) = img.shape[:2]
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     edged = cv2.Canny(hsv, float_min_val, float_max_val)
     contours, hierarchy = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     idx = 0
-    '''
-    for c in contours:
-        plt.plot(c[:, 0, 0], h - c[:, 0, 1], linewidth=1)
-        print(str(plt.plot))
-    '''
 
-    with open('working/example_draw.svg', "w+") as f:
-        f.write(f'<svg width="{w}" height="{h}" xmlns="http://www.w3.org/2000/svg">')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    path=""
+    setleng = len(set_button_list)
+    for i in range(setleng):
+        layer_name = root.set_button_name_var[i].get()
+        if layer_name == "1":
+            path =('Layers/layer_' + str(i) +'_.svg')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+
+
+    with open(path, "w+") as f:
+        f.write('<?xml version = "1.0" encoding = "UTF-8"?>\n')
+        f.write(f'<svg xmlns = "http://www.w3.org/2000/svg" xmlns:xlink = "http://www.w3.org/1999/xlink" width="{w}" height="{h}" viewBox="0 0 {w} {h}"> ')
+        #f.write(f'<svg width="{w}" height="{h}" xmlns="http://www.w3.org/2000/svg">')
 
         for c in contours:
-            f.write('<path d="M')
-            for i in range(len(c)):
-                x, y = c[i][0]
-                f.write(f"{x} {y} ")
-            f.write('" style="stroke:black"/>')
+            print(len(c), "line number = ", i)
+            if (len(c)) > 1:
+                f.write('\n<path d="M')
+                for i in range(len(c)):
+                    x, y = c[i][0]
+                    f.write(f'{x} {y} ')
+                f.write(f'" stroke-width="{stroke_width}" stroke="{stroke_color}" fill="none" />')
         f.write("</svg>")
 
 
-    svgsample()
-    '''
-    plt.axis('off')
-    plt.savefig("working/test1.svg", format="svg")
-    plt.show()
-    '''
+
+    layer_sample()
+
+    #svgsample()
+
+
+def EGG_BOT_fill():
+    import egg_main
+    egg_main
 
 def Fill():
     print("fill")
-    '''
-    import matplotlib.pyplot as plt
-    from matplotlib.patches import Ellipse, Polygon
-
-    fig, (ax1, ax2, ax3) = plt.subplots(3)
-
-    ax1.bar(range(1, 5), range(1, 5), color='red', edgecolor='black', hatch="/")
-    ax1.bar(range(1, 5), [6] * 4, bottom=range(1, 5),
-            color='blue', edgecolor='black', hatch='//')
-    ax1.set_xticks([1.5, 2.5, 3.5, 4.5])
-
-    bars = ax2.bar(range(1, 5), range(1, 5), color='yellow', ecolor='black') + \
-        ax2.bar(range(1, 5), [6] * 4, bottom=range(1, 5),
-                color='green', ecolor='black')
-    ax2.set_xticks([1.5, 2.5, 3.5, 4.5])
-
-    patterns = ('-', '+', 'x', '\\', '*', 'o', 'O', '.')
-    for bar, pattern in zip(bars, patterns):
-        bar.set_hatch(pattern)
-
-    ax3.fill([1, 3, 3, 1], [1, 1, 2, 2], fill=False, hatch='\\')
-    ax3.add_patch(Ellipse((4, 1.5), 4, 0.5, fill=False, hatch='*'))
-    ax3.add_patch(Polygon([[0, 0], [4, 1.1], [6, 2.5], [2, 1.4]], closed=True,
-                          fill=False, hatch='/'))
-    ax3.set_xlim((0, 6))
-    ax3.set_ylim((0, 2.5))
-
-    plt.show()
-    '''
     import random
     import numpy as np
     import matplotlib.pyplot as plt
@@ -1429,68 +1469,57 @@ def Fill():
     plt.show()
 
 def Image_edit():
-    print("Image_edit")
-    img = Image.open("working/pixelated_image.tif")
+    os.system('python3 image_edit.py &')
 
-    redval  = root.red_sliderVal.get()
-    blueval = root.blue_sliderVal.get()
-    greenval=root.green_sliderVal.get()
-    toneval = root.tone_sliderVal.get()
+def Vector_fill():
+    os.system('python3 egg_main.py &')
 
-
-    img = img.convert("RGBA")
-
-    pixdata = img.load()
-
-
-
-    # Clean the background noise, if color != white, then set to black.
-
-    for y in range(img.size[1]):
-        for x in range(img.size[0]):
-            if pixdata[x, y] <= (redval, blueval, greenval, toneval):
-                pixdata[x, y] = (redval, blueval, greenval, toneval)
-            else:
-                print("this")
-                #pixdata[x, y] =
-
-    img.save('working/result.tif')
-
-    ###################################################
-    ###################################################
-
-    pixelateimg = Image.open(('working/result.tif'))
-
-    width = 250
-    height = 250
-    ratio_w = width / pixelateimg.width
-    ratio_h = height / pixelateimg.height
-    if ratio_w < ratio_h:
-        # It must be fixed by width
-        resize_width = width
-        resize_height = round(ratio_w * pixelateimg.height)
-    else:
-        # Fixed by height
-        resize_width = round(ratio_h * pixelateimg.width)
-        resize_height = height
-    image_resize = pixelateimg.resize((resize_width, resize_height), Image.ANTIALIAS)
-    background_pixelate = Image.new('RGB', (width, height), (0, 0, 0))
-    offset = (round((width - resize_width) / 2), round((height - resize_height) / 2))
-    background_pixelate.paste(image_resize, offset)
-    pixelsample = ImageTk.PhotoImage(background_pixelate)
-
-    ###################################################
-    ###################################################
-    labelpixel = Label(image=pixelsample)
-    labelpixel.image = pixelsample
-    labelpixel.place(x=325, y=275, anchor="nw")
 
 ##################################################
 ### gcode generater
+
+# name-files-according to origional name
+# auto drop multi file
+# auot offset
 ##################################################
 def generate_gcode(filename):
+    start,pre,post,end,pen_up,pen_down,pen_motor,XY_feed_rate,Pen_feed_rate,Homing = gcode_menu()
+
+    '''G-code emitted at the start of processing the SVG file'''
+    preamble = start
+
+    '''G-code emitted at the end of processing the SVG file'''
+    postamble = end
+
+    '''G-code emitted before processing a SVG shape G4 is the command for dwell P is the time in ms'''
+    shape_preamble = "G0 "+ pen_motor + pen_down+ " "+ Pen_feed_rate+"\n"
+
+    '''G-code emitted after processing a SVG shape'''
+    shape_postamble =  "G0 " + pen_motor + pen_up+ " "+ Pen_feed_rate+"\n"
+
+
+    # A4 area:               210mm x 297mm
+    # Printer Cutting Area: ~178mm x ~344mm
+    # Testing Area:          150mm x 150mm  (for now)
+    canvas_width = int(e1.get())
+    canvas_height = int(e2.get())
+
+    '''Print bed width in mm'''
+    bed_max_x = canvas_width
+
+    '''Print bed height in mm'''
+    bed_max_y = canvas_height
+
+    ''' Used to control the smoothness/sharpness of the curves.
+        Smaller the value greater the sharpness. Make sure the
+        value is greater than 0.1'''
+    smoothness = 0.2
+
+
     ''' The main method that converts svg files into gcode files.
         Still incomplete. See tests/start.svg'''
+    # *** open file ***
+
 
     # Check File Validity
 
@@ -1608,13 +1637,13 @@ def generate_gcode(filename):
             if d:
                 log += debug_log("\td is GOOD!")
 
-                gcode += shape_preamble + "\n"
+
                 points = point_generator(d, m, smoothness)
+                #gcode += shape_preamble + "\n"
 
                 log += debug_log("\tPoints: " + str(points))
 
                 for x, y in points:
-
                     # log += debug_log("\t  pt: "+str((x,y)))
 
                     x = scale * x
@@ -1625,7 +1654,10 @@ def generate_gcode(filename):
                     if x >= -10000000 and x <= bed_max_x + 10000000000 and y >= -1000000000 and y <= bed_max_y + 100000000000:
                         if new_shape:
                             gcode += ("G0 X%0.1f Y%0.1f\n" % (x, y))
-                            gcode += "M03\n"
+                            #make sure to move with the pen up
+                            gcode += shape_preamble + "\n"
+                            gcode += ("G0 X%0.1f Y%0.1f\n" % (x, y))
+                            #gcode += "M03\n" spindel on
                             new_shape = False
                         else:
                             gcode += ("G0 X%0.1f Y%0.1f\n" % (x, y))
@@ -1640,6 +1672,9 @@ def generate_gcode(filename):
 
     gcode += postamble + "\n"
 
+
+
+    sample_gcode(gcode)
     # Write the Result
     ofile = open(outfile, 'w+')
     ofile.write(gcode)
@@ -1651,11 +1686,10 @@ def generate_gcode(filename):
         dfile.write(log)
         dfile.close()
 #opens svg file selector
+
 def svg_for_gcode():
-    root.SVGfile = filedialog.askopenfilename(initialdir="svg_output/", title="Select file", filetypes=(
+    root.SVGfile = filedialog.askopenfilename(initialdir="Layers/", title="Select file", filetypes=(
     ("SVG files", "*.svg"), ("all files", "*.*")))
-
-
     file = str(root.SVGfile)
     generate_gcode(file)
 #log for gcode generator
@@ -1666,13 +1700,6 @@ def debug_log(message):
         print(message)
     return message + '\n'
 #used in generate gcode
-def test(filename):
-    ''' Simple test function to call to check that this
-        module has been loaded properly'''
-    circle_gcode = "G28\nG1 Z5.0\nG4 P200\nG1 X10.0 Y100.0\nG1 X10.0 Y101.8\nG1 X10.6 Y107.0\nG1 X11.8 Y112.1\nG1 X13.7 Y117.0\nG1 X16.2 Y121.5\nG1 X19.3 Y125.7\nG1 X22.9 Y129.5\nG1 X27.0 Y132.8\nG1 X31.5 Y135.5\nG1 X36.4 Y137.7\nG1 X41.4 Y139.1\nG1 X46.5 Y139.9\nG1 X51.7 Y140.0\nG1 X56.9 Y139.4\nG1 X62.0 Y138.2\nG1 X66.9 Y136.3\nG1 X71.5 Y133.7\nG1 X75.8 Y130.6\nG1 X79.6 Y127.0\nG1 X82.8 Y122.9\nG1 X85.5 Y118.5\nG1 X87.6 Y113.8\nG1 X89.1 Y108.8\nG1 X89.9 Y103.6\nG1 X90.0 Y98.2\nG1 X89.4 Y93.0\nG1 X88.2 Y87.9\nG1 X86.3 Y83.0\nG1 X83.8 Y78.5\nG1 X80.7 Y74.3\nG1 X77.1 Y70.5\nG1 X73.0 Y67.2\nG1 X68.5 Y64.5\nG1 X63.6 Y62.3\nG1 X58.6 Y60.9\nG1 X53.5 Y60.1\nG1 X48.3 Y60.0\nG1 X43.1 Y60.6\nG1 X38.0 Y61.8\nG1 X33.1 Y63.7\nG1 X28.5 Y66.3\nG1 X24.2 Y69.4\nG1 X20.4 Y73.0\nG1 X17.2 Y77.1\nG1 X14.5 Y81.5\nG1 X12.4 Y86.2\nG1 X10.9 Y91.2\nG1 X10.1 Y96.4\nG1 X10.0 Y100.0\nG4 P200\nG4 P200\nG1 X110.0 Y100.0\nG1 X110.0 Y101.8\nG1 X110.6 Y107.0\nG1 X111.8 Y112.1\nG1 X113.7 Y117.0\nG1 X116.2 Y121.5\nG1 X119.3 Y125.7\nG1 X122.9 Y129.5\nG1 X127.0 Y132.8\nG1 X131.5 Y135.5\nG1 X136.4 Y137.7\nG1 X141.4 Y139.1\nG1 X146.5 Y139.9\nG1 X151.7 Y140.0\nG1 X156.9 Y139.4\nG1 X162.0 Y138.2\nG1 X166.9 Y136.3\nG1 X171.5 Y133.7\nG1 X175.8 Y130.6\nG1 X179.6 Y127.0\nG1 X182.8 Y122.9\nG1 X185.5 Y118.5\nG1 X187.6 Y113.8\nG1 X189.1 Y108.8\nG1 X189.9 Y103.6\nG1 X190.0 Y98.2\nG1 X189.4 Y93.0\nG1 X188.2 Y87.9\nG1 X186.3 Y83.0\nG1 X183.8 Y78.5\nG1 X180.7 Y74.3\nG1 X177.1 Y70.5\nG1 X173.0 Y67.2\nG1 X168.5 Y64.5\nG1 X163.6 Y62.3\nG1 X158.6 Y60.9\nG1 X153.5 Y60.1\nG1 X148.3 Y60.0\nG1 X143.1 Y60.6\nG1 X138.0 Y61.8\nG1 X133.1 Y63.7\nG1 X128.5 Y66.3\nG1 X124.2 Y69.4\nG1 X120.4 Y73.0\nG1 X117.2 Y77.1\nG1 X114.5 Y81.5\nG1 X112.4 Y86.2\nG1 X110.9 Y91.2\nG1 X110.1 Y96.4\nG1 X110.0 Y100.0\nG4 P200\nG28\n"
-    print(circle_gcode[:90], "...")
-    return circle_gcode
-
 ##################################################
 #blackstripes
 ##################################################
@@ -1683,25 +1710,32 @@ def crop_by_preview_name(name):
 	return name
 
 def blackstripes_filters():
-    print("blackstripes_filters")
     mode3 = (blackstripes_filter.get())
-
     image_path = ("working/pixelated_image.png")
-    path = "working/example_draw.svg"
-    color = color_pick
 
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    path= ""
+    setleng = len(set_button_list)
+    for i in range(setleng):
+        layer_name = root.set_button_name_var[i].get()
+        if layer_name == "1":
+            path = ('Layers/layer_' + str(i) +'_.svg')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+
+    str_path = str(path)
+    color = color_pick
     scale = float(root.scale_factor_sliderVal.get())
     space = int(root.space_factor_sliderVal.get())
     nib_size = float(e3.get())
-
-
     l1, l2, l3, l4 = levels_by_preview_name(image_path)
-    print (l1,l2,l3,l4)
 
     if (mode3 == "SPIRAL_"):
 
-        spiral.draw(image_path,             # input
-                path,                      # output
+        spiral.draw(image_path,            # input
+                str_path,                      # output
                 nib_size,                  # nibsize (line size in output svg)
                 color,                     # line color
                 scale,                     # scaling factor
@@ -1713,7 +1747,7 @@ def blackstripes_filters():
     if (mode3 =="CROSSED" ):
 
         crossed.draw(image_path,            # input
-                    path,                   # output
+                    str_path,                   # output
                     nib_size,               # nibsize (line size in output svg)
                     color,                  # line color
                     scale,                  # scaling factor
@@ -1721,25 +1755,71 @@ def blackstripes_filters():
                     1,                      # type
                     1,1,1                   # signature transform
                  )
-    '''
-    if (mode3 =="SKETCHY"):
+    #svgsample()
+    #layer_sample()
+    fix_svg_blackstripes()
+    #layer_sample()
 
-        sketchy.draw(image_path,  # input
-                     path,  # output
-                     20,  # nibsize (line size in output svg)
-                     1000,  # max line length
-                     color,  # line color
-                     4.06,  # scaling factor
-                     3,  # line size (internal line size for calculations)
-                     1,1,1  # signature transform
-                     )
-    '''
+def fix_svg_blackstripes():
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    path= ""
+    temp_file_path = ""
+    setleng = len(set_button_list)
+    for i in range(setleng):
+        layer_name = root.set_button_name_var[i].get()
+        if layer_name == "1":
+            path = ('Layers/layer_' + str(i)+'_.svg')
+            temp_file_path = ('Layers/layer_' + str(i)+'temp_.svg')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    svg_to_fix = open(path, 'r')
+    outfile = open(temp_file_path, 'w')
+    number_of_lines = 0
+    with open(path, 'r') as f:
+        for line in f:
+            number_of_lines += 1
 
-    svgsample()
+    count = 0
+    index = 0
+    w_h =[0,0]
+    for text in svg_to_fix:
+        viewbox = re.findall('viewBox=.+?enable-background',text)
+        temp = re.findall(r'\d+', str(viewbox))
+        res = list(map(float, temp))
+        for x in range (len(res)):
+            if res[x] > 0:
+                w_h[index]= (res[x])
+                index +=1
+        if count == 1 :
+            width = str(w_h[0])
+            height =str(w_h[1])
+            outfile.write('<?xml version="1.0" encoding="UTF-8"?>'+'\n')
+            outfile.write('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="'+width+' height='+height+'"  viewBox="0 0 '+width+' '+height+'">'+ '\n')
+        if count > 1 and count < number_of_lines:
+            outfile.write(text)
+        if count == number_of_lines-1:
+            outfile.write("</svg>")
+        count +=1
+    outfile.close()
+
+    os.rename(temp_file_path,path)
+    layer_sample()
 ##################################################
 ##################################################
+import xml.etree.ElementTree as ET
+import numpy as np
 
-def calculate_view_box(layers, aspect_ratio):
+# Landscape Letter
+DEFAULT_PAGE_WIDTH = 11
+DEFAULT_PAGE_HEIGHT = 8.5
+DEFAULT_PAGE_UNIT = 'mm'
+
+# Plot-related defaults
+DEFAULT_VIEW_BOX_MARGIN = 0.1
+STROKE_THICKNESS = 0.003  # Fraction of width of image
+PLOT_COLORS = ['black', 'red', 'green', 'blue', 'cyan', 'orange']
+
+def calculate_view_box(layers, aspect_ratio, margin=DEFAULT_VIEW_BOX_MARGIN):
     """Calculates the size of the SVG viewBox to use.
 
     Args:
@@ -1752,14 +1832,12 @@ def calculate_view_box(layers, aspect_ratio):
         tuple: a 4-tuple of floats representing the viewBox according to SVG
             specifications ``(x, y, width, height)``.
     """
-    D = float(root.scale_factor_D_sliderVal.get())
-    margin = D
     min_x = min(np.nanmin(x) for x, y in layers)
     max_x = max(np.nanmax(x) for x, y in layers)
     min_y = min(np.nanmin(y) for x, y in layers)
     max_y = max(np.nanmax(y) for x, y in layers)
-    height = (max_y - min_y)/2
-    width = (max_x - min_x)/2
+    height = max_y - min_y
+    width = max_x - min_x
 
     if height > width * aspect_ratio:
         adj_height = height * (1. + margin)
@@ -1768,8 +1846,8 @@ def calculate_view_box(layers, aspect_ratio):
         adj_width = width * (1. + margin)
         adj_height = adj_width * aspect_ratio
 
-    width_buffer = (adj_width - width) / 10.
-    height_buffer = (adj_height - height) / 10.
+    width_buffer = (adj_width - width) / 2.
+    height_buffer = (adj_height - height) / 2.
 
     return (
         min_x - width_buffer,
@@ -1808,12 +1886,9 @@ def layer_to_path(layer):
     """
     return ' '.join(_layer_to_path_gen(layer))
 
-def plot_to_svg(plot):
-    width = float(e1.get())
-    height =float(e2.get())
-    unit ="mm"
-    STROKE_THICKNESS = float(e3.get())
-    color = color_pick
+def plot_to_svg(plot, width, height):
+    stroke = e3.get()
+    float_stroke = float(stroke)
     """Converts a plot (list of layers) into an SVG document.
 
     Args:
@@ -1825,19 +1900,17 @@ def plot_to_svg(plot):
     Returns:
         str: A stringified XML document representing the image
     """
-    C = float(root.scale_factor_C_sliderVal.get())
     flipped_plot = [(x, -y) for x, y in plot]
     aspect_ratio = height / width
     view_box = calculate_view_box(flipped_plot, aspect_ratio=aspect_ratio)
     view_box_str = '{} {} {} {}'.format(*view_box)
-
-    #stroke_thickness = STROKE_THICKNESS * (view_box[2])
+    stroke_thickness = float_stroke * (view_box[2])
 
     svg = ET.Element('svg', attrib={
         'xmlns': 'http://www.w3.org/2000/svg',
         'xmlns:inkscape': 'http://www.inkscape.org/namespaces/inkscape',
-        'width': '{}{}'.format(width, unit),
-        'height': '{}{}'.format(height, unit),
+        'width': '{}{}'.format(width,""),
+        'height': '{}{}'.format(height,""),
         'viewBox': view_box_str})
 
     for i, layer in enumerate(flipped_plot):
@@ -1846,9 +1919,9 @@ def plot_to_svg(plot):
             'inkscape:groupmode': 'layer',
         })
 
-
+        color = PLOT_COLORS[i % len(PLOT_COLORS)]
         ET.SubElement(group, 'path', attrib={
-            'style': 'stroke-width: {}; stroke: {};'.format(STROKE_THICKNESS, color),
+            'style': 'stroke-width: {}; stroke: {};'.format(stroke_thickness , color),
             'fill': 'none',
             'd': layer_to_path(layer)
         })
@@ -1875,9 +1948,7 @@ def layer_to_svg(layer, **kwargs):
     """
     return plot_to_svg([layer], **kwargs)
 
-def write_plot(plot, filename):
-
-
+def write_plot(plot, filename, width=DEFAULT_PAGE_WIDTH, height=DEFAULT_PAGE_HEIGHT):
     """Writes a plot SVG to a file.
 
     Args:
@@ -1887,7 +1958,7 @@ def write_plot(plot, filename):
         height (float): the height of the output SVG
         unit (str): the unit of the height and width
     """
-    svg = plot_to_svg(plot)
+    svg = plot_to_svg(plot, width, height)
     with open(filename, 'w') as outfile:
         outfile.write(svg)
 
@@ -1895,11 +1966,21 @@ def write_plot(plot, filename):
 #pen kit
 ##################################################
 def pen_kit_gen():
-    print("pen kit")
     mode4 = (grid_type.get())
     A = float(root.scale_factor_A_sliderVal.get())
     B = float(root.scale_factor_B_sliderVal.get())
     E = int(root.scale_factor_E_sliderVal.get())
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    path= ""
+    setleng = len(set_button_list)
+    for i in range(setleng):
+        layer_name = root.set_button_name_var[i].get()
+        if layer_name == "1":
+            path = ('Layers/layer_' + str(i) +'_.svg')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
 
 
     if (mode4 == "Grid___"):
@@ -1914,7 +1995,7 @@ def pen_kit_gen():
         # project the texture onto the surface
         proj = project_and_occlude_texture(texture, surface, angle=B)
         # plot the result
-        write_plot([proj], "working/example_draw.svg")
+        write_plot([proj], path )
 
     if (mode4 =="Hilbert"):
         #Hilbert Curve Surface Projection
@@ -1928,9 +2009,10 @@ def pen_kit_gen():
         # project the texture onto the surface
         proj = project_and_occlude_texture(texture, surface, B)
         # plot the result
-        write_plot([proj], "working/example_draw.svg")
+        write_plot([proj], path )
 
-    svgsample()
+    layer_sample()
+    #svgsample()
 ##################################################
 ##################################################
 
@@ -2037,7 +2119,6 @@ def getcontours(IM, sc=2):
     return contours
 
 def hatch(IM, sc=16):
-    print("hatching...")
     PX = IM.load()
     w, h = IM.size
     lg1 = []
@@ -2108,23 +2189,29 @@ def sketch(path):
         lines += hatch(IM.resize((resolution // hatch_size, resolution // hatch_size * h // w)), hatch_size)
 
     lines = sortlines(lines)
-    f = open("working/example_draw.svg", 'w')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    path= ""
+    setleng = len(set_button_list)
+    for i in range(setleng):
+        layer_name = root.set_button_name_var[i].get()
+        if layer_name == "1":
+            path = ('Layers/layer_' + str(i) +'_.svg')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+
+    f = open(path, 'w')
     f.write(makesvg(lines))
     f.close()
-    print(len(lines), "strokes.")
-    print("done.")
-    svgsample()
+    layer_sample()
+    #svgsample()
     return lines
 
 def makesvg(lines):
-    print("generating svg file...")
     canvas_w = (e1.get())
     canvas_h = (e2.get())
     nib_size = (e3.get())
-
     color = color_pick
-
-    print (canvas_h, canvas_w)
     out = '<svg xmlns="http://www.w3.org/2000/svg" width="'+canvas_w+'" height="'+canvas_h+'" viewBox="0 0 '+canvas_w+' '+canvas_h+'" version="1.1">'
     for l in lines:
         l = ",".join([str(p[0] * 0.5) + "," + str(p[1] * 0.5) for p in l])
@@ -2133,12 +2220,9 @@ def makesvg(lines):
     return out
 
 def line_drawing():
-    print("line drawing")
     input_path = ("working/pixelated_image.tif")
     sketch(input_path)
 
-def tool_kit():
-    print("tool kit")
 ##################################################
 ##################################################
 root = Tk()
@@ -2240,28 +2324,23 @@ def getColor():
     return RGB_code
 
 def buttons_and_Labels():
-    #*** text boxes***
     Label(root, text="scale",anchor="w",bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=730, y=610, height=20, width=50)
     Label(root, text="space",anchor="w",bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=730, y=640, height=20, width=50)
     Label(root, text="Hatch",anchor="w",bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=520, y=553, height=20, width=40)
     Label(root, text="Edge",anchor="w",bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=560, y=553, height=20, width=40)
     Label(root, text="Scale", anchor="w", bg="gray20", fg="lime green", font=('Helvetica', '10')).place(x=595, y=553, height=20, width=40)
-
     Label(root, text="OUT width in mm",anchor="e",bg="gray20", fg="lime green").place(x=5, y=25, height=20, width=125)
     Label(root, text="OUT height in mm",anchor="e",bg="gray20", fg="lime green").place(x=5, y=45, height=20, width=125)
     Label(root, text="Marker Size in mm",anchor="e",bg="gray20", fg="lime green").place(x=5, y=65, height=20, width=125)
     #Label(root, text="# of colors",anchor="e",bg="gray20", fg="lime green").place(x=5, y=85, height=20, width=125)
-    Label(root, text="OUTPUT pixel size",anchor="e",bg="gray20", fg="lime green").place(x=5, y=105, height=20, width=125)
-    Label(root, text="Pix",anchor="e",bg="gray20", fg="lime green").place(x=5, y=305, height=20, width=123)
-
-    Label(root, text="X_offset",anchor="e",bg="gray20", fg="lime green").place(x=1365, y=0, height=20, width=55)
-    Label(root, text="Y_offset",anchor="e",bg="gray20", fg="lime green").place(x=1465, y=0, height=20, width=55)
-    #Label(root, text="#layers", anchor="e", bg="gray20", fg="lime green").place(x=1365, y=20, height=20, width=55)
-
-    Label(root, text="B/W",anchor="e",bg="gray20", fg="lime green").place(x=5, y=145, height=20, width=125)
-
-    Button(root, text='#layers', command=Set_layers, bg="gray20", fg="lime green", highlightbackground="gray20", activebackground="deep sky blue").place(x=1360, y=20, height=25, width=65)
-
+    Label(root, text="OUTPUT pixel size",anchor="e",bg="gray20", fg="lime green").place(x=5, y=85, height=20, width=125)
+    Label(root, text="Number of Pixels", anchor="e", bg="gray20", fg="lime green").place(x=5, y=105, height=20,width=125)
+    Label(root, text="Pix",anchor="e",bg="gray20", fg="lime green").place(x=5, y=145, height=20, width=123)
+    Label(root, text="X_shift",anchor="e",bg="gray20", fg="lime green").place(x=1365, y=0, height=20, width=50)
+    Label(root, text="Y_shift",anchor="e",bg="gray20", fg="lime green").place(x=1465, y=0, height=20, width=50)
+    Label(root, text="Scale", anchor="e", bg="gray20", fg="lime green").place(x=1465, y=20, height=20, width=50)
+    Button(root, text='SET', command=set_px_by_box, bg="gray20", fg="lime green", highlightbackground="gray20",activebackground="deep sky blue").place(x=175, y=105, height=20, width=35)
+    Button(root, text='layers', command=Set_layers, bg="gray20", fg="lime green", highlightbackground="gray20", activebackground="deep sky blue").place(x=1365, y=20, height=25, width=50)
     Button(root,text='',  command=setcolorred, bg="red", fg="red",highlightbackground="lime green",activebackground="red").place(x=5,y=145,height= 40, width=40)
     Button(root,text='',  command=setcolorgreen, bg="green", fg="green",highlightbackground="lime green",activebackground="green").place(x=45,y=145,height= 40, width=40)
     Button(root,text='',  command=setcolorblue, bg="blue", fg="blue",highlightbackground="lime green",activebackground="blue").place(x=5,y=185,height= 40, width=40)
@@ -2280,9 +2359,13 @@ def buttons_and_Labels():
            highlightbackground="gray20", activebackground="deep sky blue").place(x=640, y=527, height=25, width=130)
     Button(root, text='Gcode', command=svg_for_gcode, bg="gray20", fg="lime green", highlightbackground="gray20",
            activebackground="deep sky blue").place(x=770, y=527, height=25, width=100)
+
     Button(root, text='edit_image', command=Image_edit, bg="gray20", fg="lime green", highlightbackground="gray20",
-           activebackground="deep sky blue").place(x=0, y=415, height=25, width=100)
-    Button(root, text='path_fill', command=Fill, bg="gray20", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=110, y=280, height=30, width=100)
+    Button(root, text='Vector_fill', command=Vector_fill, bg="gray20", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=110, y=310, height=30, width=100)
+
+    Button(root, text='graph_fill', command=Fill, bg="gray20", fg="lime green", highlightbackground="gray20",
            activebackground="deep sky blue").place(x=0, y=465, height=25, width=100)
     Button(root, text='OUTLINE', command=OUTLINE, bg="gray20", fg="lime green", highlightbackground="gray20",
            activebackground="deep sky blue").place(x=0, y=515, height=25, width=100)
@@ -2303,23 +2386,141 @@ def buttons_and_Labels():
     Button(root, text='Gray_Lines', command=gray_Lines, bg="gray20", fg="lime green", highlightbackground="gray20",
            activebackground="deep sky blue").place(x=101, y=615, height=25, width=100)
 
-default_x_mm_output = StringVar(root, value='600')
+def sample_gcode(gcode_preview):
+    Label(root, text="Gcode", anchor="w", bg="gray20", fg="lime green", font=('Helvetica', '12')).place(x=1290, y=560,
+                                                                                                      height=20,width=100)
+    Gcode_Text = st.ScrolledText(root,
+                            bg='white',
+                            relief=GROOVE,
+                            font='TkFixedFont', )
+    Gcode_Text.insert(INSERT, gcode_preview)
+    Gcode_Text.place(x=1290, y=580, height=120, width=200)
+
+def gcode_menu():
+    with open("gcode_default.ini", "r") as gcode_defaults:
+            commands = gcode_defaults.read()
+    str_XY_FEED_Rate_mm_dirty = re.search(r'XY_FEED_Rate_mm.*?Pen_Down_FEED_Rate_mm', commands, re.DOTALL).group()
+    str_XY_FEED_Rate_mm = str_XY_FEED_Rate_mm_dirty.replace("XY_FEED_Rate_mm\n", "").replace("Pen_Down_FEED_Rate_mm", "").replace("\n","")
+
+    str_Pen_Down_FEED_Rate_mm_dirty = re.search(r'Pen_Down_FEED_Rate_mm.*?PEN_UP_HIGHT_mm', commands, re.DOTALL).group()
+    str_Pen_Down_FEED_Rate_mm = str_Pen_Down_FEED_Rate_mm_dirty.replace("Pen_Down_FEED_Rate_mm\n", "").replace("PEN_UP_HIGHT_mm", "").replace("\n","")
+
+    str_PEN_UP_HIGHT_mm_dirty = re.search(r'PEN_UP_HIGHT_mm.*?PEN_DOWN_HIGHT_mm', commands, re.DOTALL).group()
+    str_PEN_UP_HIGHT_mm = str_PEN_UP_HIGHT_mm_dirty.replace("PEN_UP_HIGHT_mm\n", "").replace("PEN_DOWN_HIGHT_mm", "").replace("\n","")
+
+    str_PEN_DOWN_HIGHT_mm_dirty = re.search(r'PEN_DOWN_HIGHT_mm.*?Pen_Motor', commands, re.DOTALL).group()
+    str_PEN_DOWN_HIGHT_mm = str_PEN_DOWN_HIGHT_mm_dirty.replace("PEN_DOWN_HIGHT_mm\n", "").replace("Pen_Motor", "").replace("\n","")
+
+    str_Pen_dirty = re.search(r'Pen_Motor.*?Homing', commands, re.DOTALL).group()
+    str_Pen = str_Pen_dirty.replace("Pen_Motor\n", "").replace("Homing", "").replace("\n","")
+
+    str_Homing_dirty = re.search(r'Homing.*?Start', commands, re.DOTALL).group()
+    str_Homing = str_Homing_dirty.replace("Homing\n", "").replace("Start", "").replace("\n","")
+
+    str_start_dirty = re.search(r'Start.*?Pre_move', commands, re.DOTALL).group()
+    str_start = str_start_dirty.replace("Start\n", "").replace("Pre_move", "")
+
+    str_pre_dirty = re.search(r'Pre_move.*?Post_move', commands, re.DOTALL).group()
+    str_pre = str_pre_dirty.replace("Pre_move\n", "").replace("Post_move", "")
+
+    str_post_dirty = re.search(r'Post_move.*?End', commands, re.DOTALL).group()
+    str_post =  str_post_dirty .replace("Post_move\n", "").replace("End", "")
+
+    str_end_diry = re.search(r'End.*?Finish', commands, re.DOTALL).group()
+    str_end = str_end_diry.replace("End\n", "").replace("Finish", "")
+
+
+
+    Label(root, text="Pen Motor", anchor="w", bg="gray20", fg="lime green", font=('Helvetica', '8')).place(x=1090, y=560,height=20, width=100)
+    default_Pen_Text = StringVar(root, value= str_Pen)
+    default_Pen_Text = Entry(root, textvariable=default_Pen_Text)
+    default_Pen_Text.place(x=1090, y=580, height=20, width=80)
+
+    Label(root, text="XY_F_rate", anchor="w", bg="gray20", fg="lime green", font=('Helvetica', '9')).place(x=1090, y=600,height=20, width=100)
+    default_XY_feed_Text = StringVar(root, value= str_XY_FEED_Rate_mm)
+    default_XY_feed_Text = Entry(root, textvariable= default_XY_feed_Text)
+    default_XY_feed_Text.place(x=1090, y=620, height=20, width=80)
+
+    Label(root, text="PEN_F_rate", anchor="w", bg="gray20", fg="lime green", font=('Helvetica', '9')).place(x=1090, y=640,height=20, width=100)
+    PEN_FEED_RATE_Text = StringVar(root, value= str_Pen_Down_FEED_Rate_mm)
+    PEN_FEED_RATE_Text = Entry(root, textvariable=PEN_FEED_RATE_Text)
+    PEN_FEED_RATE_Text.place(x=1090, y=660, height=20, width=80)
+
+    Label(root, text="PEN_Up_pos", anchor="w", bg="gray20", fg="lime green", font=('Helvetica', '9')).place(x=1175, y=560,height=20, width=100)
+    PEN_UP_HIGHT_mm_Text = StringVar(root, value= str_PEN_UP_HIGHT_mm)
+    PEN_UP_HIGHT_mm_Text = Entry(root, textvariable=PEN_UP_HIGHT_mm_Text )
+    PEN_UP_HIGHT_mm_Text.place(x=1175, y=580, height=20, width=80)
+
+    Label(root, text="PEN_Down_pos", anchor="w", bg="gray20", fg="lime green", font=('Helvetica', '9')).place(x=1175, y=600,height=20, width=100)
+    PEN_DOWN_HIGHT_mm_Text = StringVar(root, value= str_PEN_DOWN_HIGHT_mm)
+    PEN_DOWN_HIGHT_mm_Text = Entry(root, textvariable=PEN_DOWN_HIGHT_mm_Text )
+    PEN_DOWN_HIGHT_mm_Text.place(x=1175, y=620, height=20, width=80)
+
+    Label(root, text="HOMING", anchor="w", bg="gray20", fg="lime green", font=('Helvetica', '9')).place(x=1175, y=640,height=20, width=100)
+    str_Homing_Text = StringVar(root, value= str_Homing)
+    str_Homing_Text = Entry(root, textvariable=str_Homing_Text)
+    str_Homing_Text.place(x=1175, y=660, height=20, width=80)
+
+    Label(root, text="Start", anchor="w", bg="gray20", fg="lime green", font=('Helvetica', '12')).place(x=780, y=560,
+                                                                                                        height=20,
+                                                                                                        width=100)
+    Start_Text = st.ScrolledText(root,
+                              bg='white',
+                              relief=GROOVE,
+                              font='TkFixedFont')
+
+    Start_Text.insert(INSERT,str_start)
+    Start_Text.place(x=780, y=580, height=50, width=150)
+
+    Label(root, text="Pre_move", anchor="w", bg="gray20", fg="lime green", font=('Helvetica', '12')).place(x=780, y=630,
+                                                                                                           height=20,
+                                                                                                           width=100)
+    Pre_move_Text = st.ScrolledText(root,
+                                 bg='white',
+                                 relief=GROOVE,
+                                 font='TkFixedFont' )
+    Pre_move_Text.insert(INSERT,str_pre)
+    Pre_move_Text.place(x=780, y=650, height=50, width=150)
+
+    Label(root, text="Post_move", anchor="w", bg="gray20", fg="lime green", font=('Helvetica', '12')).place(x=935,
+                                                                                                            y=630,
+                                                                                                            height=20,
+                                                                                                            width=100)
+    Post_move_Text = st.ScrolledText(root,
+                                  bg='white',
+                                  relief=GROOVE,
+                                  font='TkFixedFont', )
+    Post_move_Text.insert(INSERT,str_post)
+    Post_move_Text.place(x=935, y=650, height=50, width=150)
+
+    Label(root, text="End", anchor="w", bg="gray20", fg="lime green", font=('Helvetica', '12')).place(x=935, y=560,
+                                                                                                      height=20,
+                                                                                                      width=100)
+    End_Text = st.ScrolledText(root,
+                            bg='white',
+                            relief=GROOVE,
+                            font='TkFixedFont', )
+    End_Text.insert(INSERT,str_end)
+    End_Text.place(x=935, y=580, height=50, width=150)
+
+
+    return(str_start,str_pre,str_post,str_end,str_PEN_UP_HIGHT_mm,str_PEN_DOWN_HIGHT_mm,str_Pen,str_XY_FEED_Rate_mm,str_Pen_Down_FEED_Rate_mm,str_Homing)
+
+default_x_mm_output = StringVar(root, value='1000')
 e1 = Entry(root, textvariable=default_x_mm_output)
-default_y_mm_output = StringVar(root, value='800')
+default_y_mm_output = StringVar(root, value='420')
 e2 = Entry(root, textvariable=default_y_mm_output)
 default_markertip_mm_output = StringVar(root, value='1.6')
 e3 = Entry(root, textvariable=default_markertip_mm_output)
 deault = StringVar(root, value='8')
 e5 = Entry(root, textvariable=deault)
-
-#deault2 = StringVar(root, value='8')
-#e4 = Entry(root, textvariable=deault2)
-
+deault_pixels = StringVar(root, value='2')
+e6 = Entry(root, textvariable=deault_pixels)
 e1.place(x=135, y=25, height=20, width=75)
 e2.place(x=135, y=45, height=20, width=75)
 e3.place(x=135, y=65, height=20, width=75)
-#e4.place(x=135, y=85, height=20, width=75)
-e5.place(x=135, y=105, height=20, width=75)
+e5.place(x=135, y=85, height=20, width=75)
+e6.place(x=135, y=105, height=20, width=40)
 
 root.scale_factor_A_sliderVal= Scale(root, from_=1, to=500, resolution=1,length=75,width=7,font=('Helvetica', '8'), orient=HORIZONTAL, bg="gray20",
                            fg="lime green",
@@ -2372,35 +2573,6 @@ root.ASCII_sliderVal = Scale(root, from_=1, to=100, length=100,width=7, orient=H
                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="spring green")
 root.ASCII_sliderVal.place(x=100, y=476)
 
-'''
-root.red_sliderVal = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
-                           fg="lime green",
-                           highlightbackground="gray20", activebackground="deep sky blue", troughcolor="red")
-root.red_sliderVal.place(x=135, y=165)
-
-root.blue_sliderVal = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
-                            fg="lime green",
-                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="blue")
-root.blue_sliderVal.place(x=135, y=205)
-root.blue_sliderVal_max = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
-                            fg="lime green",
-                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="blue")
-root.blue_sliderVal_max.place(x=210, y=205)
-root.green_sliderVal = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
-                             fg="lime green",
-                             highlightbackground="gray20", activebackground="deep sky blue", troughcolor="green")
-root.green_sliderVal.place(x=135, y=245)
-root.green_sliderVal_max = Scale(root, from_=1, to=255, length=75, orient=HORIZONTAL, bg="gray20",
-                             fg="lime green",
-                             highlightbackground="gray20", activebackground="deep sky blue", troughcolor="green")
-root.green_sliderVal_max.place(x=210, y=245)
-'''
-
-root.tone_sliderVal = Scale(root, from_=1, to=255, length=150, orient=HORIZONTAL, bg="gray20",
-                            fg="lime green",
-                            highlightbackground="gray20", activebackground="deep sky blue", troughcolor="gray49")
-root.tone_sliderVal.place(x=135, y=125)
-
 root.CV_sliderVal = Scale(root, from_=0, to=128, length=75, width=7,font=('Helvetica', '8'), orient=HORIZONTAL, bg="gray20",
                              fg="lime green",
                              highlightbackground="gray20", activebackground="deep sky blue", troughcolor="black")
@@ -2414,31 +2586,29 @@ root.rotation_slider = Scale(root, from_=0, to=360, length=75, width=7,font=('He
                              highlightbackground="gray20", activebackground="deep sky blue", troughcolor="white")
 root.rotation_slider.place(x=180, y=670)
 
-root.tone_sliderVal.set(125)  # Set the initial value to 125
-'''
-root.green_sliderVal.set(0)  # Set the initial value to 125
-root.blue_sliderVal.set(0)  # Set the initial value to 125
-root.red_sliderVal.set(0)  # Set the initial value to 125
-root.green_sliderVal_max.set(255)  # Set the initial value to 125
-root.blue_sliderVal_max.set(255)  # Set the initial value to 125
-root.red_sliderVal_max.set(255)  # Set the initial value to 125
-'''
+root.pixelate_sliderVal = Scale(root, from_=2, to=0, length=75, orient=HORIZONTAL, bg="gray20",
+                                fg="lime green",
+                                highlightbackground="gray20", activebackground="deep sky blue", troughcolor="lavender")
+root.pixelate_sliderVal.place(x=135, y=125)
 
 root.ASCII_sliderVal.set(12)  # Set the initial value to 125
 root.CV_sliderVal.set(0)  # Set the initial value to 125
 root.CV_sliderVal_max.set(255)  # Set the initial value to 125
 
-
 # Create a spinbox
-x_offest_box = Spinbox(root, from_=1, to=99,width = 2)
+set_val_xoffset = DoubleVar(value=0.0)  # initial value
+x_offest_box = Spinbox(root, from_=-99, to=99,width = 3, increment=.1,textvariable=set_val_xoffset)
 x_offest_box.place(x=1325, y=0)
-y_offset_box = Spinbox(root, from_=1, to=99,width = 2)
+set_val_yoffset = DoubleVar(value=0.0)  # initial value
+y_offset_box = Spinbox(root, from_=-99, to=99,width = 3, increment=.1,textvariable=set_val_yoffset)
 y_offset_box.place(x=1425, y=0)
-layers_box = Spinbox(root, from_=1, to=256,width = 2)
+layers_box = Spinbox(root, from_=1, to=256,width = 3)
 layers_box.place(x=1325, y=20 )
+set_val = DoubleVar(value=1.0)  # initial value
+scale_box = Spinbox(root, increment=.1,from_=-10.0, to=10.0,width = 3, textvariable=set_val)
+scale_box.place(x=1425, y=20 )
 
-
-Label(root, text="Sample_Mode", anchor="w", bg="gray20", fg="lime green").place(x=105, y=325, height=20, width=100)
+Label(root, text="Sample_Mode", anchor="w", bg="gray20", fg="lime green").place(x=105, y=165, height=20, width=100)
 MODES = [
     ("NEAREST ", "NEAREST "),
     ("BILINEAR", "BILINEAR"),
@@ -2451,7 +2621,7 @@ v.set("L")  # initialize
 count = 0
 for text, mode in MODES:
     b = Radiobutton(root, text=text, variable=v, value=mode, command=pixelate, bg="gray20", fg="lime green",
-                    highlightbackground="gray20", activebackground="deep sky blue").place(x=105, y=345 + count)
+                    highlightbackground="gray20", activebackground="deep sky blue").place(x=105, y=185 + count)
     count = count + 20
 v.set("LANCZOS ")
 
@@ -2474,8 +2644,6 @@ Label(root, anchor="w", bg="gray20", fg="lime green").place(x=625, y=555, height
 MODES3 = [
     ("SPIRAL_", "SPIRAL_"),
     ("CROSSED", "CROSSED"),
-
-
 ]
 
 blackstripes_filter = StringVar()
@@ -2521,6 +2689,9 @@ line_type.set("Horizontal")
 
 root.configure(background='gray20')
 buttons_and_Labels()
+gcode_menu()
+Set_layers()
+root.SVGfile = ""
 
 def box1_color():
     button_color1 = box1color
@@ -2617,9 +2788,10 @@ def cmd(speed):
     pixelate()
 
 def maxsize(size):
-    root.pixelate_sliderVal = Scale(root, from_=2, to=size, length=150, orient=HORIZONTAL,command=cmd, bg="gray20",
+    root.pixelate_sliderVal = Scale(root, from_=2, to=size, length=75, orient=HORIZONTAL,command=cmd, bg="gray20",
                                fg="lime green",
                                highlightbackground="gray20", activebackground="deep sky blue",troughcolor="lavender")
-    root.pixelate_sliderVal.place(x=135, y=285)
+    root.pixelate_sliderVal.place(x=135, y=125)
+    root.pixelate_sliderVal.set(size)  # Set the initial value to 125
 
 root.mainloop()
