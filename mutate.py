@@ -4,6 +4,7 @@ from tkinter import *
 import tkinter.ttk as ttk
 import tkinter.scrolledtext as st
 from tkcolorpicker import askcolor
+from random import random, randint , shuffle
 from PIL import Image
 from PIL import ImageTk
 from svglib.svglib import svg2rlg
@@ -58,7 +59,7 @@ import numpy as np
 ###########################################################
 #line_drawing_stuff
 ###########################################################
-from random import *
+
 import math
 import argparse
 from PIL import Image, ImageDraw, ImageOps
@@ -297,8 +298,8 @@ def ASCII():
         for j in range(cols):
             color_index = ((px[l, j]))
             gray, alpa = color_index
-            color_flip = 256 - gray
-            print (color_flip)
+            #color_flip = 256 - gray # color invert correction <-- that was wrong
+            color_flip =  gray
             if (root.ascii_small.get() == '1'):
                 index = color_flip /25.5
                 int_index = int(index)
@@ -309,7 +310,6 @@ def ASCII():
                 char = longASCII[int_index]
 
             numb_of_squares = color_flip / gray_scale_values
-            print(numb_of_squares)
             if (rows_out <= cols_out):
                 y_orent = (cols_out - (j * int_pix_size))  #
             else:
@@ -396,6 +396,141 @@ view_button_list = []
 set_button_list = []
 transform_data = [[0,0,1.0],[0,0,1.0]]
 
+def make_layer_stack():
+    print("makelayers")
+    # add offset val box
+    # link to normal layers
+    # get folder
+def dots():
+    print("dots")
+    dot_size = e3.get()
+    pixel_size = e5.get()
+    dpi = int(pixel_size)/float(dot_size)
+    int_dpi = int(dpi)
+    int_pix_size = int(pixel_size)
+    int_dpi_box = int_dpi*int_dpi
+    image = Image.open("working/pixelated_image.tif").convert('LA').transpose(Image.FLIP_TOP_BOTTOM)
+    px = image.load()
+    rows = image.size[0]
+    cols = image.size[1]
+    rows_out = image.size[0] * int_pix_size
+    cols_out = image.size[1] * int_pix_size
+    d = draw.Drawing(rows_out, cols_out, origin=(0, 0), displayInline=False)
+    gray_scale_values = 256 / int_dpi_box # if dpi=25  grayscalevalues = 10ish --- every shift by 10vla makes more or less dots
+    ### make a 2d arary to hold all points in a given pixle of the output
+    no_repeat = [[""] * (2) for _ in range(int(int_dpi_box))]
+
+    for l in range(cols):
+        print (l ,"_cols")
+        #foward
+        #if l%2 == 0:
+        for j in range(rows):
+            print(j,"_rows")
+            color_index = ((px[j, l]))
+            x_min = j*int_dpi
+            x_max = j*int_dpi+int_dpi
+            y_min = l*int_dpi
+            y_max = l*dpi+dpi
+            gray, alpa = color_index
+            num_of_dots = (255-gray) / gray_scale_values
+            int_num_of_dots = int(num_of_dots)
+            print(gray_scale_values, " gray_scae")
+            print(gray , " gray")
+            print(int_num_of_dots,  " num_of_dots")
+
+            index = 0
+            for i in range(int_dpi):
+                for j in range(int_dpi):
+                    no_repeat[index][0] = [i+x_min]
+                    no_repeat[index][1] = [j+y_min]
+                    index += 1
+            ### shuffle up the array
+            shuffle(no_repeat)
+            for ii, sublist in enumerate(no_repeat):
+                shuffle(no_repeat[ii])
+            print(no_repeat)
+            #need to trim leng of no_repeat to int_num_of_dots
+            cut_dots_pos = no_repeat[:int_num_of_dots]
+            print(cut_dots_pos)
+
+
+            for dots in range(len(cut_dots_pos)):
+                ran_x = cut_dots_pos[dots][0]
+                ran_y = cut_dots_pos[dots][1]
+                str_ran_x = str(ran_x).strip('[]')
+                str_ran_y = str(ran_y).strip('[]')
+                int_ran_x = int(str_ran_x )
+                int_ran_y = int(str_ran_y )
+                print(ran_x, sep='')
+                print (ran_x , " ranx")
+                print("making dots")
+                d.append(draw.Lines(int_ran_x, int_ran_y, int_ran_x+.8, int_ran_y, close=False, fill="none", stroke=color_pick, stroke_width=dot_size))
+        '''
+        else:
+            for j in range(rows):
+                print(j,"_rows")
+                color_index = ((px[j, l]))
+                x_min = j*int_dpi
+                x_max = j*int_dpi+int_dpi
+                y_min = l*int_dpi
+                y_max = l*dpi+dpi
+                gray, alpa = color_index
+                num_of_dots = (255-gray) / gray_scale_values
+                int_num_of_dots = int(num_of_dots)
+                print(gray_scale_values, " gray_scae")
+                print(gray , " gray")
+                print(int_num_of_dots,  " num_of_dots")
+
+                index = 0
+                for i in range(int_dpi):
+                    for j in range(int_dpi):
+                        no_repeat[index][0] = [i+x_min]
+                        no_repeat[index][1] = [j+y_min]
+                        index += 1
+                ### shuffle up the array
+                shuffle(no_repeat)
+                for ii, sublist in enumerate(no_repeat):
+                    shuffle(no_repeat[ii])
+                print(no_repeat)
+                #need to trim leng of no_repeat to int_num_of_dots
+                cut_dots_pos = no_repeat[:int_num_of_dots]
+                print(cut_dots_pos)
+
+                for dots in range(len(cut_dots_pos)):
+                    ran_x = cut_dots_pos[dots][0]
+                    ran_y = cut_dots_pos[dots][1]
+                    str_ran_x = str(ran_x).strip('[]')
+                    str_ran_y = str(ran_y).strip('[]')
+                    int_ran_x = int(str_ran_x )
+                    int_ran_y = int(str_ran_y )
+                    print(ran_x, sep='')
+                    print (ran_x , " ranx")
+                    print("making dots")
+                    d.append(draw.Lines(int_ran_x, int_ran_y, int_ran_x + .01, int_ran_y, close=False, fill="none",
+                                        stroke=color_pick, stroke_width=dot_size))
+
+
+        '''
+
+            
+
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    setleng = len(set_button_list)
+    for i in range(setleng):
+        layer_name = root.set_button_name_var[i].get()
+        if layer_name == "1":
+            d.saveSvg('Layers/layer_' + str(i) +'_.svg')
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++++++++++++++
+
+    layer_sample()
+
+
+
+
+
 def gray_Lines():
     mode5 = (line_type.get())
     ("Horizontal", "Horizontal"),
@@ -403,6 +538,8 @@ def gray_Lines():
     ("Rotate", "Rotate"),
     image = Image.open("working/pixelated_image.tif").convert('LA').transpose(Image.FLIP_TOP_BOTTOM)
     pix_size = (e5.get())
+    nib_size = (e3.get())
+    max_lines = float(pix_size) / float(nib_size)
     int_pix_size = int(pix_size)
     degrees = root.rotation_slider.get()
     rows = image.size[0]  # 11
@@ -410,22 +547,26 @@ def gray_Lines():
     rows_out = image.size[0] * int_pix_size  # 14*11=154
     cols_out = image.size[1] * int_pix_size  # 14*6=84
     px = image.load()
-    d = draw.Drawing(rows_out, cols_out, origin=(0, -cols_out), displayInline=False)  # more wtf !!!
-    gray_scale_values = 256 / int_pix_size
+    d = draw.Drawing(rows_out, cols_out, origin=(0, -cols_out), displayInline=False)
+    gray_scale_values = 256 / int(max_lines)
+
+
     for l in range(rows):
         for j in range(cols):
             color_index = ((px[l, j]))
             gray, alpa = color_index
-            color_flip = 256 - gray
+            color_flip = gray
+            print(color_flip  , "  flip")
             numb_of_squares = color_flip / gray_scale_values
             int_number_of_squares = int(numb_of_squares)
+            print(int_number_of_squares , "nub_squares")
             if (rows_out <= cols_out):
                 y_orent = (cols_out - (j * int_pix_size))  #
             else:
                 y_orent = (cols_out - (j * int_pix_size))
             if (root.white_val.get() == '1'):
                 if (int_number_of_squares != 1):
-                    for numb in range(int_number_of_squares):
+                    for numb in range(int_number_of_squares-1):
                         if (mode5 == "Horizontal"):
                             x2 = ((l * int_pix_size) + int_pix_size/2)
                             y2 = (y_orent+ numb)-int_pix_size
@@ -451,7 +592,7 @@ def gray_Lines():
                             y2 = -y2pos
 
                         elif (mode5 == "Rotate"):  # not working with white
-                            print("rot_line")
+
                             x2 = (l * int_pix_size + numb)
                             y2 = (y_orent)
                             x1 = (l * int_pix_size + numb)  # int_pix_size
@@ -1335,19 +1476,13 @@ def pixelate():
     # Open Paddington
     img = Image.open(str(root.filename))
     size = (root.pixelate_sliderVal.get())
-
-
     mode = (v.get())
     # Scale back up using NEAREST to original
     if v.get() != NONE:
-
         if img.size[1] < img.size[0]:
             maxsize =img.size[1]
         else:
             maxsize=img.size[0]
-
-
-
         wpercent = (size / float(img.size[0]))
         hsize = int((float(img.size[1])*float(wpercent)))
 
@@ -1446,34 +1581,17 @@ def OUTLINE():
 
     #svgsample()
 
-
 def EGG_BOT_fill():
     import egg_main
     egg_main
 
-def Fill():
-    print("fill")
-    import random
-    import numpy as np
-    import matplotlib.pyplot as plt
 
-    patterns = ('-', '+', 'x', '\\', '*', 'o', 'O', '.', '/')
-    markers = 'os<^>p*'
-    for pattern in patterns:
-        plt.scatter(np.random.uniform(size=(3, 1)), np.random.uniform(size=(3, 1)), s=1000,
-                    marker=random.choice(markers),
-                    facecolor='white',
-                    hatch=3 * pattern, label=pattern)
-
-    plt.legend(scatterpoints=1, loc='best')
-    plt.show()
 
 def Image_edit():
     os.system('python3 image_edit.py &')
 
 def Vector_fill():
     os.system('python3 egg_main.py &')
-
 
 ##################################################
 ### gcode generater
@@ -2234,12 +2352,9 @@ center_tk_window.center_on_screen(root)
 
 root.title("MUTATE_IMAGES")
 def submenu_and_checkboxes():
-
     # ***main menue***
     menu =Menu(root)
-
     root.config(menu=menu)
-
     subMenu = Menu(menu)
     menu.add_cascade(label="File", menu=subMenu)
     subMenu.add_command(label = "open image", command= openfile)
@@ -2364,9 +2479,14 @@ def buttons_and_Labels():
            activebackground="deep sky blue").place(x=110, y=280, height=30, width=100)
     Button(root, text='Vector_fill', command=Vector_fill, bg="gray20", fg="lime green", highlightbackground="gray20",
            activebackground="deep sky blue").place(x=110, y=310, height=30, width=100)
+    Button(root, text='Make_layers', command=make_layer_stack, bg="gray20", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=110, y=340, height=30, width=100)
 
-    Button(root, text='graph_fill', command=Fill, bg="gray20", fg="lime green", highlightbackground="gray20",
-           activebackground="deep sky blue").place(x=0, y=465, height=25, width=100)
+    Button(root, text='Dots', command=dots, bg="gray20", fg="lime green", highlightbackground="gray20",
+           activebackground="deep sky blue").place(x=110, y=370, height=30, width=100)
+
+#    Button(root, text='graph_fill', command=Fill, bg="gray20", fg="lime green", highlightbackground="gray20",
+           #activebackground="deep sky blue").place(x=0, y=465, height=25, width=100)
     Button(root, text='OUTLINE', command=OUTLINE, bg="gray20", fg="lime green", highlightbackground="gray20",
            activebackground="deep sky blue").place(x=0, y=515, height=25, width=100)
     Button(root, text='ASCII', command=ASCII, bg="gray20", fg="lime green", highlightbackground="gray20",
@@ -2516,6 +2636,7 @@ deault = StringVar(root, value='8')
 e5 = Entry(root, textvariable=deault)
 deault_pixels = StringVar(root, value='2')
 e6 = Entry(root, textvariable=deault_pixels)
+
 e1.place(x=135, y=25, height=20, width=75)
 e2.place(x=135, y=45, height=20, width=75)
 e3.place(x=135, y=65, height=20, width=75)
@@ -2788,10 +2909,11 @@ def cmd(speed):
     pixelate()
 
 def maxsize(size):
+    set_size = e6.get()
     root.pixelate_sliderVal = Scale(root, from_=2, to=size, length=75, orient=HORIZONTAL,command=cmd, bg="gray20",
                                fg="lime green",
                                highlightbackground="gray20", activebackground="deep sky blue",troughcolor="lavender")
     root.pixelate_sliderVal.place(x=135, y=125)
-    root.pixelate_sliderVal.set(size)  # Set the initial value to 125
+    root.pixelate_sliderVal.set(set_size)  # Set the initial value to 125
 
 root.mainloop()
